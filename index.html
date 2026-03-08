@@ -121,9 +121,12 @@ h1 em{color:var(--gold);font-style:normal;}
 .player-selector{margin-bottom:20px;}
 .selector-label{font-size:11px;letter-spacing:.15em;color:var(--soft);text-transform:uppercase;margin-bottom:10px;font-family:'DM Mono',monospace;}
 .player-grid{display:flex;flex-wrap:wrap;gap:6px;}
-.player-btn{padding:5px 12px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--soft);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;transition:all .15s;}
-.player-btn:hover{border-color:var(--gold);color:var(--text);}
+.player-btn{padding:6px 14px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:#e2e2f0;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:600;transition:all .15s;}
+.player-btn:hover{border-color:var(--gold);color:#fff;}
 .player-btn.active{color:#000;font-weight:700;border-color:transparent;}
+.player-btn.unranked-btn{color:var(--dim);background:var(--surface);border-style:dashed;font-weight:400;}
+.player-btn.unranked-btn:hover{border-color:var(--soft);color:var(--soft);}
+.player-btn.unranked-btn.active{color:#000;font-weight:700;border-style:solid;border-color:transparent;}
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
 @media(max-width:600px){.charts-grid{grid-template-columns:1fr;}}
 
@@ -326,7 +329,18 @@ h1 em{color:var(--gold);font-style:normal;}
         <div class="controls" id="cmpPeriodSelector"></div>
       </div>
       <div class="player-selector">
-        <div class="selector-label">プレイヤー選択（最大6名）</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+          <div class="selector-label" style="margin-bottom:0">プレイヤー選択（最大6名）</div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+            <div id="unrankedToggleTrack" onclick="toggleUnranked()"
+              style="position:relative;width:36px;height:20px;border-radius:10px;background:var(--border);transition:background .2s;cursor:pointer;flex-shrink:0;">
+              <div id="unrankedToggleThumb"
+                style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s;"></div>
+            </div>
+            <span id="unrankedToggleLabel" onclick="toggleUnranked()"
+              style="font-size:11px;color:var(--dim);font-family:'Noto Sans JP',sans-serif;cursor:pointer;">参加数不足を含む</span>
+          </label>
+        </div>
         <div class="player-grid" id="playerGrid"></div>
       </div>
       <div id="compareContent"><div class="select-hint">↑ 上のボタンからプレイヤーを選んでください</div></div>
@@ -353,7 +367,7 @@ h1 em{color:var(--gold);font-style:normal;}
             <div class="weight-label">救済条件：参加日数</div>
             <div class="weight-input-row">
               <button class="weight-ud" onclick="adjustExcl('days',-1)">▼</button>
-              <input type="number" class="weight-val" id="exclDays" value="3" min="0" max="30" style="width:54px;" oninput="onExclInput()">
+              <input type="number" class="weight-val" id="exclDays" value="2" min="0" max="30" style="width:54px;" oninput="onExclInput()">
               <button class="weight-ud" onclick="adjustExcl('days',1)">▲</button>
               <span class="weight-pct">日以上</span>
             </div>
@@ -370,7 +384,6 @@ h1 em{color:var(--gold);font-style:normal;}
         </div>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <div id="exclPreview" style="font-size:12px;color:var(--soft);flex:1;"></div>
-          <button class="update-btn" onclick="applyExcl()">ランキングに反映</button>
         </div>
       </div>
       <div class="settings-box">
@@ -380,13 +393,12 @@ h1 em{color:var(--gold);font-style:normal;}
           <span class="total-label">合計</span>
           <span class="total-val" id="weightTotal">100%</span>
           <span class="total-warn" id="weightWarn" style="display:none">⚠ 合計が100%になるよう調整してください</span>
-          <button class="update-btn" id="applyWeightBtn" onclick="applyWeights()">ランキングに反映</button>
         </div>
 
         <div class="preset-section">
           <h4>プリセット</h4>
           <div class="preset-save-row">
-            <input type="text" class="preset-name-input" id="presetNameInput" placeholder="プリセット名を入力">
+            <input type="text" class="preset-name-input" id="presetNameInput" placeholder="プリセット名を入力" value="デフォルト">
             <button class="preset-save-btn" onclick="savePreset()">💾 保存</button>
           </div>
           <div class="preset-list" id="presetList"></div>
@@ -550,7 +562,7 @@ function calcElo(games) {
 // ════════════════════════════════════════════════
 // 指標順: Elo rating → TOP率 → 4着回避率 → Ave.Score → TotalScore → 連対率
 const METRIC_ORDER = ['Elo','TOP率','4着回避率','Ave.Score','TotalScore','連対率'];
-const DEFAULT_WEIGHTS = {'Elo':25,'TOP率':25,'4着回避率':25,'Ave.Score':15,'TotalScore':10,'連対率':0};
+const DEFAULT_WEIGHTS = {'Elo':30,'TOP率':30,'4着回避率':20,'Ave.Score':10,'TotalScore':5,'連対率':5};
 
 let WEIGHTS = {...DEFAULT_WEIGHTS};
 let GMM = {};
@@ -576,7 +588,7 @@ function normG(val, m) {
 
 // 除外条件（変更可能）
 let EXCL_PCT  = 3;   // 総半荘数に対する閾値%
-let EXCL_DAYS = 3;   // 救済条件：参加日数
+let EXCL_DAYS = 2;   // 救済条件：参加日数
 let EXCL_HANSO = 10; // 救済条件：半荘回数
 
 // 動的信頼補正: k = max(5, 期間中央値 × 0.5)
@@ -658,7 +670,7 @@ function calcRatings(raw, section) {
 // ════════════════════════════════════════════════
 let RAW={}, YEARS=[], GAMES=[], RANKED=[], UNRANKED=[];
 let CUR_RANK_SEC='', CUR_CMP_SEC='', CUR_SORT='final';
-let SEL_PLAYERS=[], CMP_CHARTS={};
+let SEL_PLAYERS=[], CMP_CHARTS={}, CMP_SHOW_UNRANKED=false;
 
 // ════════════════════════════════════════════════
 // UPLOAD
@@ -899,12 +911,15 @@ function renderRanking() {
             <div style="font-size:12px;color:var(--dim);width:24px;text-align:center;flex-shrink:0">—</div>
             <div style="font-weight:700;font-size:14px;flex:1">${d.name}</div>
             <div style="font-size:10px;color:var(--soft);font-family:'DM Mono',monospace;flex-shrink:0">${d['参加日数']??0}日/${d['半荘']??0}局</div>
-            <div style="text-align:right;flex-shrink:0;margin-left:8px;">
-              <div style="font-family:'Black Han Sans',sans-serif;font-size:22px;color:var(--soft)">${d.finalRaw.toFixed(1)}</div>
-              <div style="font-size:9px;color:var(--dim);font-family:'DM Mono',monospace;">参考スコア</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;justify-content:flex-start;padding-left:32px;align-items:flex-start;">
+            ${metricsHtml}
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:52px;margin-left:auto;">
+              <div style="font-size:9px;color:var(--soft);font-family:'DM Mono',monospace">参考スコア</div>
+              <div style="font-family:'Black Han Sans',sans-serif;font-size:22px;color:var(--soft);line-height:1">${d.finalRaw.toFixed(1)}</div>
+              <div style="width:38px;height:2px;"></div>
             </div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;justify-content:flex-start;padding-left:32px;">${metricsHtml}</div>
         </div>
         <div class="unranked-detail" style="display:none;padding:12px 48px;background:var(--card);border-top:1px solid var(--border);">
           <div style="font-size:10px;color:var(--gold);font-family:'DM Mono',monospace;margin-bottom:10px;letter-spacing:.15em;">参考値（参加数不足・補正なし）</div>
@@ -948,16 +963,41 @@ function getCmpData() {
   return calcRatings(RAW, CUR_CMP_SEC);
 }
 
+function toggleUnranked() {
+  CMP_SHOW_UNRANKED = !CMP_SHOW_UNRANKED;
+  const track = document.getElementById('unrankedToggleTrack');
+  const thumb = document.getElementById('unrankedToggleThumb');
+  const label = document.getElementById('unrankedToggleLabel');
+  if (CMP_SHOW_UNRANKED) {
+    track.style.background = 'var(--gold)';
+    thumb.style.left = '19px';
+    label.style.color = 'var(--gold)';
+  } else {
+    track.style.background = 'var(--border)';
+    thumb.style.left = '3px';
+    label.style.color = 'var(--dim)';
+    // 除外プレイヤーの選択を解除
+    const r = getCmpData();
+    const unrankedNames = r.unranked.map(d=>d.name);
+    SEL_PLAYERS = SEL_PLAYERS.filter(n => !unrankedNames.includes(n));
+  }
+  renderPlayerBtns();
+  renderCompare();
+}
+
 function renderPlayerBtns() {
   const grid=document.getElementById('playerGrid');
   grid.innerHTML='';
   const r=getCmpData();
-  [...r.ranked,...r.unranked].sort((a,b)=>b.final-a.final).forEach(d=>{
+
+  // ランク対象者（明るく表示）
+  [...r.ranked].sort((a,b)=>b.final-a.final).forEach(d=>{
     const idx=SEL_PLAYERS.indexOf(d.name);
     const btn=document.createElement('button');
     btn.className='player-btn'+(idx>=0?' active':'');
     if(idx>=0) btn.style.background=COLORS[idx];
     btn.textContent=d.name;
+    btn.title='ランキング対象';
     btn.onclick=()=>{
       const i=SEL_PLAYERS.indexOf(d.name);
       if(i>=0) SEL_PLAYERS.splice(i,1);
@@ -966,6 +1006,39 @@ function renderPlayerBtns() {
     };
     grid.appendChild(btn);
   });
+
+  // 区切り線＋除外プレイヤー（常に表示、トグルOFFは非活性）
+  if (r.unranked.length) {
+    const sep = document.createElement('div');
+    sep.style.cssText='width:100%;display:flex;align-items:center;gap:8px;margin:6px 0 4px;';
+    sep.innerHTML=`<div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:10px;color:var(--dim);font-family:'DM Mono',monospace;white-space:nowrap">参加数不足（参考値）</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>`;
+    grid.appendChild(sep);
+
+    [...r.unranked].sort((a,b)=>b.finalRaw-a.finalRaw).forEach(d=>{
+      const idx=SEL_PLAYERS.indexOf(d.name);
+      const btn=document.createElement('button');
+      if (CMP_SHOW_UNRANKED) {
+        btn.className='player-btn unranked-btn'+(idx>=0?' active':'');
+        if(idx>=0) btn.style.background=COLORS[idx];
+        btn.title='参加数不足（参考値として比較可能）';
+        btn.onclick=()=>{
+          const i=SEL_PLAYERS.indexOf(d.name);
+          if(i>=0) SEL_PLAYERS.splice(i,1);
+          else if(SEL_PLAYERS.length<6) SEL_PLAYERS.push(d.name);
+          renderPlayerBtns(); renderCompare();
+        };
+      } else {
+        btn.className='player-btn';
+        btn.disabled=true;
+        btn.title='「参加数不足を含む」をONにすると選択できます';
+        btn.style.cssText='opacity:.3;cursor:not-allowed;color:var(--dim);border-color:var(--border);background:var(--surface);';
+      }
+      btn.textContent=d.name;
+      grid.appendChild(btn);
+    });
+  }
 }
 
 function destroyCmpCharts(){Object.values(CMP_CHARTS).forEach(c=>c&&c.destroy());CMP_CHARTS={};}
@@ -997,7 +1070,12 @@ function renderCompare() {
     sHtml+=`<div class="stat-card"><div class="stat-name">${m.label}</div>`;
     ss.forEach(d=>{
       const col=COLORS[SEL_PLAYERS.indexOf(d.name)];
-      sHtml+=`<div><div class="stat-row"><span class="stat-player"><span class="dot" style="background:${col}"></span>${d.name}</span><span class="stat-val" style="color:${col}">${m.fmt(d[m.key])}</span></div>
+      const isUnranked = r.unranked.some(u=>u.name===d.name);
+      sHtml+=`<div><div class="stat-row">
+        <span class="stat-player"><span class="dot" style="background:${col}"></span>
+        <span style="color:${isUnranked?'var(--soft)':'#e2e2f0'};font-size:12px;">${d.name}${isUnranked?' <span style="font-size:9px;color:var(--dim)">(参考)</span>':''}</span>
+        </span>
+        <span class="stat-val" style="color:${col};font-size:14px;font-weight:700">${m.fmt(d[m.key])}</span></div>
         <div class="bar-track"><div class="bar-fill" style="width:${nr(d[m.key],m).toFixed(0)}%;background:${col}"></div></div></div>`;
     });
     sHtml+='</div>';
@@ -1017,27 +1095,27 @@ function renderCompare() {
     datasets:sel.map((d,i)=>({label:d.name,data:rm.map(m=>Math.max(0,Math.min(10,(d[m.key]-m.mn)/(m.mx-m.mn)*10))),
       borderColor:COLORS[i],backgroundColor:COLORS[i]+'22',pointBackgroundColor:COLORS[i],borderWidth:2,pointRadius:4}))
   },options:{responsive:true,maintainAspectRatio:false,
-    scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#6a6a8a',font:{size:9}},grid:{color:'#2a2a40'},
-      pointLabels:{color:'#aaaacc',font:{size:10,family:'Noto Sans JP'}},angleLines:{color:'#2a2a40'}}},
-    plugins:{legend:{labels:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:11}}}}}});
+    scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#8888aa',font:{size:9}},grid:{color:'#2a2a40'},
+      pointLabels:{color:'#e2e2f0',font:{size:11,family:'Noto Sans JP'}},angleLines:{color:'#2a2a40'}}},
+    plugins:{legend:{labels:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:12}}}}}});
 
   CMP_CHARTS.place=new Chart(document.getElementById('placeC'),{type:'bar',data:{
     labels:sel.map(d=>d.name),
     datasets:['TOP','2着','3着','4着'].map((p,i)=>({label:p,data:sel.map(d=>((d[p]??0)/d['半荘']*100).toFixed(1)),
       backgroundColor:['#f5c842','#42e8a0','#8888aa','#e84260'][i]}))
   },options:{responsive:true,maintainAspectRatio:false,
-    scales:{x:{stacked:true,ticks:{color:'#aaa',font:{family:'Noto Sans JP',size:10}},grid:{color:'#1a1a26'}},
-      y:{stacked:true,max:100,ticks:{color:'#666',callback:v=>v+'%'},grid:{color:'#2a2a40'}}},
-    plugins:{legend:{labels:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:10}}}}}});
+    scales:{x:{stacked:true,ticks:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:11}},grid:{color:'#1a1a26'}},
+      y:{stacked:true,max:100,ticks:{color:'#aaaacc',callback:v=>v+'%'},grid:{color:'#2a2a40'}}},
+    plugins:{legend:{labels:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:11}}}}}});
 
   CMP_CHARTS.score=new Chart(document.getElementById('scoreC'),{type:'bar',data:{
     labels:sel.map(d=>d.name),
     datasets:[{label:'合計スコア',data:sel.map(d=>d['Total Score']),
       backgroundColor:sel.map((_,i)=>COLORS[i]+'bb'),borderColor:sel.map((_,i)=>COLORS[i]),borderWidth:2}]
   },options:{responsive:true,maintainAspectRatio:false,
-    scales:{x:{ticks:{color:'#aaa',font:{family:'Noto Sans JP',size:10}},grid:{color:'#1a1a26'}},
-      y:{ticks:{color:'#666'},grid:{color:'#2a2a40'}}},
-    plugins:{legend:{labels:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:10}}}}}});
+    scales:{x:{ticks:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:11}},grid:{color:'#1a1a26'}},
+      y:{ticks:{color:'#aaaacc'},grid:{color:'#2a2a40'}}},
+    plugins:{legend:{labels:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:11}}}}}});
 }
 
 // ════════════════════════════════════════════════
@@ -1083,11 +1161,9 @@ function refreshWeightUI() {
   const ok = total === 100;
   const tv = document.getElementById('weightTotal');
   const tw = document.getElementById('weightWarn');
-  const ab = document.getElementById('applyWeightBtn');
   tv.textContent = total + '%';
   tv.className = 'total-val ' + (ok ? 'total-ok' : 'total-ng');
   tw.style.display = ok ? 'none' : 'inline';
-  ab.disabled = !ok;
   updateSummary();
 }
 
@@ -1139,7 +1215,7 @@ function initExclUI() {
 // ════════════════════════════════════════════════
 const PRESET_KEY = 'mahjong_presets';
 const DEFAULT_PRESETS = [
-  {name:'デフォルト',  w:{'Elo':25,'TOP率':25,'4着回避率':25,'Ave.Score':15,'TotalScore':10,'連対率':0}},
+  {name:'デフォルト',  w:{'Elo':30,'TOP率':30,'4着回避率':20,'Ave.Score':10,'TotalScore':5,'連対率':5}},
   {name:'4着回避重視', w:{'Elo':15,'TOP率':10,'4着回避率':40,'Ave.Score':15,'TotalScore':10,'連対率':10}},
   {name:'TOP率重視',   w:{'Elo':15,'TOP率':40,'4着回避率':15,'Ave.Score':15,'TotalScore':10,'連対率':5}},
 ];
@@ -1178,6 +1254,9 @@ function loadPreset(name) {
     const inp = document.getElementById(`wv_${m}`);
     if (inp) inp.value = WEIGHTS[m];
   });
+  // プリセット名をinputに反映
+  const nameInput = document.getElementById('presetNameInput');
+  if (nameInput) nameInput.value = name;
   refreshWeightUI();
   renderPresets();
 }
@@ -1208,6 +1287,21 @@ function renderPresets() {
 // TABS
 // ════════════════════════════════════════════════
 function switchTab(id) {
+  // settingsタブから離れる時に自動反映
+  const wasSettings = document.querySelector('.tab-pane.active')?.id === 'tab-settings';
+  if (wasSettings && id !== 'settings' && Object.keys(RAW).length) {
+    // 重み反映
+    const total = METRIC_ORDER.reduce((s,m)=>s+WEIGHTS[m],0);
+    if (total === 100) {
+      buildGMM(RAW);
+      updateSummary();
+    }
+    // 除外条件反映
+    EXCL_PCT   = parseInt(document.getElementById('exclPct')?.value)   || EXCL_PCT;
+    EXCL_DAYS  = parseInt(document.getElementById('exclDays')?.value)  || EXCL_DAYS;
+    EXCL_HANSO = parseInt(document.getElementById('exclHanso')?.value) || EXCL_HANSO;
+    applyRankSection(CUR_RANK_SEC);
+  }
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));
 }
