@@ -539,6 +539,12 @@ function normG(val, m) {
 const MIN_DAYS = 3;
 const MIN_HANSO_FIXED = 10;
 
+// 動的信頼補正: k = max(5, 期間中央値 × 0.5)
+function calcCred(hanso, medianHanso) {
+  const k = Math.max(5, medianHanso * 0.5);
+  return hanso > 0 ? hanso / (hanso + k) : 0;
+}
+
 function calcRatings(raw, section) {
   const names = Object.keys(raw).filter(n => raw[n][section]);
   if (!names.length) return {ranked:[], unranked:[]};
