@@ -334,6 +334,45 @@ h1 em{color:var(--gold);font-style:normal;}
 
     <!-- ═══ SETTINGS TAB ═══ -->
     <div class="tab-pane" id="tab-settings">
+      <div class="settings-box" style="margin-bottom:16px;">
+        <h3>ランキング除外条件</h3>
+        <p style="font-size:12px;color:var(--soft);margin-bottom:16px;line-height:1.6;">
+          総半荘数に対する割合が閾値%未満のプレイヤーを除外します。<br>
+          ただし参加日数・半荘回数の両方を満たす場合は除外されません。
+        </p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+          <div class="weight-item">
+            <div class="weight-label">閾値（総半荘数に対する%）</div>
+            <div class="weight-input-row">
+              <button class="weight-ud" onclick="adjustExcl('pct',-1)">▼</button>
+              <input type="number" class="weight-val" id="exclPct" value="3" min="0" max="50" style="width:54px;" oninput="onExclInput()">
+              <span class="weight-pct">%</span>
+            </div>
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">救済条件：参加日数</div>
+            <div class="weight-input-row">
+              <button class="weight-ud" onclick="adjustExcl('days',-1)">▼</button>
+              <input type="number" class="weight-val" id="exclDays" value="3" min="0" max="30" style="width:54px;" oninput="onExclInput()">
+              <button class="weight-ud" onclick="adjustExcl('days',1)">▲</button>
+              <span class="weight-pct">日以上</span>
+            </div>
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">救済条件：半荘回数</div>
+            <div class="weight-input-row">
+              <button class="weight-ud" onclick="adjustExcl('hanso',-1)">▼</button>
+              <input type="number" class="weight-val" id="exclHanso" value="10" min="0" max="100" style="width:54px;" oninput="onExclInput()">
+              <button class="weight-ud" onclick="adjustExcl('hanso',1)">▲</button>
+              <span class="weight-pct">回以上</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div id="exclPreview" style="font-size:12px;color:var(--soft);flex:1;"></div>
+          <button class="update-btn" onclick="applyExcl()">ランキングに反映</button>
+        </div>
+      </div>
       <div class="settings-box">
         <h3>スコア算出設定</h3>
         <div class="weight-grid" id="weightGrid"></div>
@@ -535,9 +574,10 @@ function normG(val, m) {
   return Math.max(0, Math.min(100, (val-mn)/(mx-mn)*100));
 }
 
-// 固定除外条件: 参加日数3日未満 または 半荘10回未満
-const MIN_DAYS = 3;
-const MIN_HANSO_FIXED = 10;
+// 除外条件（変更可能）
+let EXCL_PCT  = 3;   // 総半荘数に対する閾値%
+let EXCL_DAYS = 3;   // 救済条件：参加日数
+let EXCL_HANSO = 10; // 救済条件：半荘回数
 
 // 動的信頼補正: k = max(5, 期間中央値 × 0.5)
 function calcCred(hanso, medianHanso) {
@@ -596,14 +636,19 @@ function calcRatings(raw, section) {
     return {name, ...d, elo, norms, weighted, cred:c, final, finalRaw};
   }
 
+  // 除外判定: 総半荘数の閾値%未満 かつ 救済条件（日数・半荘）を満たさない
+  const totalHanso = names.reduce((s,n) => s + (raw[n][section]['半荘'] ?? 0), 0);
+  const exclLine = totalHanso * (EXCL_PCT / 100);
+
   const ranked = [], unranked = [];
   names.forEach(name => {
     const d = raw[name][section];
     const hanso = d['半荘'] ?? 0;
     const days  = d['参加日数'] ?? 0;
     const entry = calcEntry(name);
-    // 固定除外条件：参加日数3日以上 かつ 半荘10回以上
-    (days >= MIN_DAYS && hanso >= MIN_HANSO_FIXED ? ranked : unranked).push(entry);
+    const aboveLine = hanso >= exclLine;
+    const rescued   = days >= EXCL_DAYS && hanso >= EXCL_HANSO;
+    (aboveLine || rescued ? ranked : unranked).push(entry);
   });
   return {ranked, unranked};
 }
@@ -649,6 +694,7 @@ function loadFile(file) {
       applyCmpSection(defSec);
       buildWeightGrid();
       renderPresets();
+      initExclUI();
       updateSummary();
 
       if (parsed.lastDate) {
@@ -814,7 +860,7 @@ function renderRanking() {
     const div=document.createElement('div');
     div.style.cssText='margin:28px 0 12px;display:flex;align-items:center;gap:12px;';
     div.innerHTML=`<div style="flex:1;height:1px;background:var(--border)"></div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--soft);letter-spacing:.1em;white-space:nowrap">参加数不足（${MIN_DAYS}日以上・${MIN_HANSO_FIXED}局以上が条件）— ランキング対象外</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--soft);letter-spacing:.1em;white-space:nowrap">参加数不足（総半荘数の${EXCL_PCT}%未満・${EXCL_DAYS}日${EXCL_HANSO}局未満）— ランキング対象外</div>
       <div style="flex:1;height:1px;background:var(--border)"></div>`;
     list.appendChild(div);
     [...UNRANKED].sort((a,b)=>b.finalRaw-a.finalRaw).forEach(d=>{
@@ -1051,6 +1097,41 @@ function applyWeights() {
   updateSummary();
   // タブをランキングに切り替え
   switchTab('ranking');
+}
+
+// ════════════════════════════════════════════════
+// EXCLUSION CONDITIONS
+// ════════════════════════════════════════════════
+function adjustExcl(type, delta) {
+  const ids = {pct:'exclPct', days:'exclDays', hanso:'exclHanso'};
+  const el = document.getElementById(ids[type]);
+  el.value = Math.max(0, (parseInt(el.value)||0) + delta);
+  onExclInput();
+}
+
+function onExclInput() {
+  const pct   = parseInt(document.getElementById('exclPct').value)   || 0;
+  const days  = parseInt(document.getElementById('exclDays').value)  || 0;
+  const hanso = parseInt(document.getElementById('exclHanso').value) || 0;
+  document.getElementById('exclPreview').innerHTML =
+    `現在の設定：総半荘数の <strong style="color:var(--gold)">${pct}%</strong> 未満 かつ
+     <strong style="color:var(--gold)">${days}日</strong> ・
+     <strong style="color:var(--gold)">${hanso}局</strong> 未満のプレイヤーを除外`;
+}
+
+function applyExcl() {
+  EXCL_PCT   = parseInt(document.getElementById('exclPct').value)   || 0;
+  EXCL_DAYS  = parseInt(document.getElementById('exclDays').value)  || 0;
+  EXCL_HANSO = parseInt(document.getElementById('exclHanso').value) || 0;
+  applyRankSection(CUR_RANK_SEC);
+  switchTab('ranking');
+}
+
+function initExclUI() {
+  document.getElementById('exclPct').value   = EXCL_PCT;
+  document.getElementById('exclDays').value  = EXCL_DAYS;
+  document.getElementById('exclHanso').value = EXCL_HANSO;
+  onExclInput();
 }
 
 // ════════════════════════════════════════════════
