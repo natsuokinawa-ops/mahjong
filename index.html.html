@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="麻雀部">
+<meta name="theme-color" content="#05050a">
+<link rel="manifest" id="pwaManifest">
+<link rel="apple-touch-icon" id="appleIcon">
+<title>北向きさん麻雀部 — ダッシュボード</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&family=Black+Han+Sans&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#05050a;--surface:#0d0d15;--card:#111120;--border:#1e1e30;
+  --gold:#f5c842;--silver:#b0b8cc;--bronze:#d4845a;
+  --text:#e2e2f0;--muted:#555570;--dim:#8888aa;--soft:#aaaacc;--green:#42e8a0;--red:#e84260;--blue:#4290e8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;min-height:100vh;}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(242,200,66,.02)1px,transparent 1px),linear-gradient(90deg,rgba(242,200,66,.02)1px,transparent 1px);
+  background-size:40px 40px;}
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:48px 24px 80px;}
+
+/* Header */
+header{margin-bottom:40px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.35em;color:var(--gold);text-transform:uppercase;margin-bottom:8px;}
+h1{font-family:'Black Han Sans',sans-serif;font-size:clamp(32px,6vw,56px);line-height:.95;}
+h1 em{color:var(--gold);font-style:normal;}
+.subtitle{font-size:11px;color:var(--soft);margin-top:8px;font-weight:300;letter-spacing:.05em;}
+.data-date{font-size:16px;color:var(--gold);margin-top:12px;font-family:'DM Mono',monospace;display:none;letter-spacing:.05em;}
+
+/* Upload */
+.upload-zone{border:1.5px dashed var(--border);border-radius:10px;padding:28px 32px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:36px;background:var(--surface);}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--gold);background:rgba(245,200,66,.04);}
+.upload-icon{font-size:28px;margin-bottom:8px;}
+.upload-text{font-size:13px;color:var(--soft);}
+.upload-text strong{color:var(--text);}
+.upload-filename{font-family:'DM Mono',monospace;font-size:11px;color:var(--green);margin-top:6px;}
+#fileInput{display:none;}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-bottom:28px;background:var(--surface);border-radius:8px;padding:4px;border:1px solid var(--border);width:fit-content;}
+.tab-btn{padding:8px 20px;border-radius:6px;border:none;background:none;color:var(--soft);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;letter-spacing:.05em;transition:all .15s;}
+.tab-btn.active{background:var(--gold);color:#000;}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* Section label & controls */
+.section-label{font-size:14px;color:#fff;font-weight:700;letter-spacing:.05em;margin-bottom:10px;font-family:'Noto Sans JP',sans-serif;}
+.controls{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap;align-items:center;}
+.period-btn{padding:6px 16px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--soft);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;transition:all .15s;}
+.period-btn:hover{border-color:var(--gold);color:var(--text);}
+.period-btn.active{background:var(--gold);color:#000;border-color:var(--gold);}
+.sort-btn{padding:6px 16px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--soft);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;transition:all .15s;}
+.sort-btn:hover{border-color:var(--gold);color:var(--text);}
+.sort-btn.active{background:var(--gold);color:#000;border-color:var(--gold);}
+
+/* Podium */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin-bottom:36px;}
+.podium-item{text-align:center;flex:1;max-width:180px;}
+.podium-name{font-weight:700;font-size:13px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.podium-score-disp{font-family:'Black Han Sans',sans-serif;font-size:20px;margin-bottom:6px;}
+.podium-block{border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;font-family:'Black Han Sans',sans-serif;font-size:32px;}
+.podium-1st .podium-block{height:90px;background:rgba(245,200,66,.15);border:1px solid rgba(245,200,66,.5);color:var(--gold);}
+.podium-2nd .podium-block{height:65px;background:rgba(176,184,204,.1);border:1px solid rgba(176,184,204,.3);color:var(--silver);}
+.podium-3rd .podium-block{height:48px;background:rgba(212,132,90,.1);border:1px solid rgba(212,132,90,.3);color:var(--bronze);}
+.podium-1st .podium-score-disp{color:var(--gold);}
+.podium-2nd .podium-score-disp{color:var(--silver);}
+.podium-3rd .podium-score-disp{color:var(--bronze);}
+.podium-2nd{order:-1;}.podium-1st{order:0;}.podium-3rd{order:1;}
+
+/* Rank list */
+.ranking-list{display:flex;flex-direction:column;gap:4px;}
+.rank-item{display:grid;grid-template-columns:50px 1fr auto;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s;}
+.rank-item:hover{border-color:rgba(245,200,66,.3);transform:translateX(3px);}
+.rank-item.expanded{border-color:var(--gold);}
+.rank-item.rank-1{border-color:rgba(245,200,66,.45);}
+.rank-item.rank-2{border-color:rgba(176,184,204,.35);}
+.rank-item.rank-3{border-color:rgba(212,132,90,.35);}
+.rank-num{display:flex;align-items:center;justify-content:center;min-height:60px;font-family:'Black Han Sans',sans-serif;font-size:20px;}
+.rank-item.rank-1 .rank-num{background:rgba(245,200,66,.1);color:var(--gold);}
+.rank-item.rank-2 .rank-num{background:rgba(176,184,204,.07);color:var(--silver);}
+.rank-item.rank-3 .rank-num{background:rgba(212,132,90,.07);color:var(--bronze);}
+.rank-item:not(.rank-1):not(.rank-2):not(.rank-3) .rank-num{color:var(--soft);}
+.rank-main{padding:12px 14px;}
+.rank-name-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;}
+.rank-name{font-weight:700;font-size:15px;}
+.rank-badge{font-size:9px;padding:2px 6px;border-radius:20px;font-family:'DM Mono',monospace;}
+.badge-s{background:rgba(245,200,66,.15);color:var(--gold);}
+.badge-a{background:rgba(66,232,160,.12);color:var(--green);}
+.badge-b{background:rgba(66,144,232,.12);color:var(--blue);}
+.badge-c{background:rgba(85,85,112,.25);color:var(--soft);}
+.rank-bars{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.mini-bar{display:flex;align-items:center;gap:4px;font-size:10px;}
+.mini-bar-track{width:52px;height:3px;background:var(--border);border-radius:2px;}
+.mini-bar-fill{height:100%;border-radius:2px;}
+.mini-label{color:var(--soft);min-width:38px;font-size:9px;}
+.rank-score-col{padding:12px 18px 12px 6px;text-align:right;}
+.score-number{font-family:'Black Han Sans',sans-serif;font-size:26px;line-height:1;}
+.rank-item.rank-1 .score-number{color:var(--gold);}
+.rank-item.rank-2 .score-number{color:var(--silver);}
+.rank-item.rank-3 .score-number{color:var(--bronze);}
+.score-label{font-size:10px;color:var(--soft);letter-spacing:.1em;margin-top:2px;font-family:'DM Mono',monospace;}
+.cred-dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:3px;vertical-align:middle;}
+.rank-detail{display:none;padding:14px 50px;background:var(--surface);border-top:1px solid var(--border);grid-column:1/-1;}
+.rank-item.expanded .rank-detail{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;}
+.detail-stat-name{font-size:10px;color:var(--soft);letter-spacing:.15em;text-transform:uppercase;margin-bottom:3px;font-family:'DM Mono',monospace;}
+.detail-stat-val{font-size:17px;font-weight:700;color:var(--gold);}
+.detail-stat-unit{font-size:11px;font-weight:300;color:var(--soft);}
+.detail-bar{height:3px;background:var(--border);border-radius:2px;margin-top:5px;}
+.detail-bar-fill{height:100%;border-radius:2px;background:var(--gold);}
+.detail-stat-norm{font-size:9px;color:var(--dim);margin-top:2px;font-family:'DM Mono',monospace;}
+
+/* Compare */
+.player-selector{margin-bottom:20px;}
+.selector-label{font-size:11px;letter-spacing:.15em;color:var(--soft);text-transform:uppercase;margin-bottom:10px;font-family:'DM Mono',monospace;}
+.player-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.player-btn{padding:5px 12px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--soft);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;transition:all .15s;}
+.player-btn:hover{border-color:var(--gold);color:var(--text);}
+.player-btn.active{color:#000;font-weight:700;border-color:transparent;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+@media(max-width:600px){.charts-grid{grid-template-columns:1fr;}}
+
+/* ── Responsive (smartphone) ── */
+@media(max-width:640px){
+  .wrap{padding:20px 14px 60px;}
+  h1{font-size:32px;}
+  header{flex-direction:column;gap:12px;}
+  .header-right{width:100%;align-items:stretch;}
+  .upload-zone-compact{width:100%;}
+  .export-btn{width:100%;justify-content:center;}
+  .data-date{font-size:13px;}
+
+  /* Tabs: scroll horizontally */
+  .tabs{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}
+  .tab-btn{padding:8px 14px;font-size:11px;white-space:nowrap;}
+
+  /* Period/sort buttons */
+  .controls{gap:4px;}
+  .period-btn,.sort-btn{padding:5px 10px;font-size:11px;}
+
+  /* Podium */
+  .podium-name{font-size:11px;}
+  .podium-score-disp{font-size:16px;}
+  .podium-block{font-size:24px;}
+  .podium-1st .podium-block{height:70px;}
+  .podium-2nd .podium-block{height:52px;}
+  .podium-3rd .podium-block{height:38px;}
+
+  /* Rank list */
+  .rank-item{grid-template-columns:36px 1fr auto;}
+  .rank-num{font-size:16px;min-height:52px;}
+  .rank-name{font-size:13px;}
+  .rank-main{padding:10px 10px;}
+  .rank-bars{gap:5px;}
+  .mini-bar-track{width:36px;}
+  .score-number{font-size:20px !important;}
+  .rank-score-col{padding:10px 12px 10px 4px;}
+  .rank-detail{padding:12px 16px;}
+
+  /* Compare */
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .radar-wrap{height:240px;}
+  .chart-wrap{height:200px;}
+
+  /* Settings */
+  .weight-grid{grid-template-columns:1fr 1fr;}
+  .total-row{flex-wrap:wrap;gap:8px;}
+  .total-row .total-warn{width:100%;}
+  .update-btn{width:100%;}
+  .preset-save-row{flex-direction:column;}
+  .preset-name-input{width:100%;}
+  .preset-save-btn{width:100%;}
+
+  /* Formula summary */
+  #formulaSummary .settings-box{padding:10px 14px;}
+}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;}
+.chart-title{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-bottom:16px;font-family:'DM Mono',monospace;}
+.chart-wrap{position:relative;height:240px;}
+.radar-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:14px;}
+.radar-wrap{position:relative;height:300px;max-width:460px;margin:0 auto;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px;}
+.stat-card{background:var(--card);padding:16px 14px;}
+.stat-name{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;font-family:'DM Mono',monospace;}
+.stat-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px;}
+.stat-player{color:var(--soft);font-size:11px;}
+.stat-val{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;}
+.bar-track{height:3px;background:var(--border);border-radius:2px;margin-top:3px;}
+.bar-fill{height:100%;border-radius:2px;}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
+.select-hint{text-align:center;padding:48px;color:var(--soft);font-size:13px;}
+.no-data{text-align:center;padding:60px;color:var(--soft);}
+.no-data .icon{font-size:40px;margin-bottom:12px;}
+.no-data p{font-size:13px;}
+
+/* Upload compact */
+.upload-zone-compact{border:1.5px dashed var(--border);border-radius:8px;padding:10px 16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);display:flex;align-items:center;gap:10px;min-width:220px;}
+.upload-zone-compact:hover,.upload-zone-compact.drag-over{border-color:var(--gold);background:rgba(245,200,66,.04);}
+.upload-zone-compact .upload-icon{font-size:18px;flex-shrink:0;}
+.upload-zone-compact .upload-text{font-size:11px;color:var(--soft);text-align:left;line-height:1.4;}
+.upload-zone-compact .upload-text strong{color:var(--text);font-size:12px;}
+.upload-zone-compact .upload-filename{font-family:'DM Mono',monospace;font-size:10px;color:var(--green);margin-top:2px;}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+/* Export btn */
+.export-btn{display:flex;align-items:center;gap:8px;padding:10px 20px;border-radius:6px;border:1px solid var(--gold);background:rgba(245,200,66,.08);color:var(--gold);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;transition:all .15s;}
+.export-btn:hover{background:var(--gold);color:#000;}
+.export-btn:disabled{opacity:.4;cursor:default;}
+
+/* ── Score Settings Tab ── */
+.settings-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:28px;}
+.settings-box h3{font-size:13px;color:var(--gold);font-family:'DM Mono',monospace;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px;}
+.weight-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:20px;}
+.weight-item{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:14px;}
+.weight-label{font-size:11px;color:var(--soft);margin-bottom:8px;font-family:'DM Mono',monospace;letter-spacing:.1em;}
+.weight-input-row{display:flex;align-items:center;gap:4px;}
+.weight-ud{width:26px;height:26px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
+.weight-ud:hover{border-color:var(--gold);color:var(--gold);}
+.weight-val{width:54px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:14px;font-weight:700;text-align:center;padding:3px 0;}
+.weight-pct{font-size:12px;color:var(--soft);margin-left:2px;}
+.weight-item.auto-item .weight-val{color:var(--gold);}
+.total-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:6px;background:var(--card);border:1px solid var(--border);margin-bottom:20px;}
+.total-row .total-label{font-size:13px;color:var(--soft);font-family:'DM Mono',monospace;}
+.total-row .total-val{font-size:18px;font-weight:700;font-family:'Black Han Sans',sans-serif;margin-left:auto;}
+.total-ok{color:var(--green);}
+.total-ng{color:var(--red);}
+.total-warn{font-size:11px;color:var(--red);margin-left:8px;}
+.update-btn{padding:8px 20px;border-radius:6px;border:none;background:var(--gold);color:#000;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+.update-btn:hover{background:#e0b430;}
+.update-btn:disabled{opacity:.4;cursor:default;}
+
+/* Preset */
+.preset-section{margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
+.preset-section h4{font-size:12px;color:var(--soft);font-family:'DM Mono',monospace;letter-spacing:.15em;text-transform:uppercase;margin-bottom:14px;}
+.preset-save-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.preset-name-input{flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:6px 10px;}
+.preset-name-input:focus{outline:none;border-color:var(--gold);}
+.preset-save-btn{padding:6px 16px;border-radius:4px;border:1px solid var(--gold);background:rgba(245,200,66,.08);color:var(--gold);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;transition:all .15s;white-space:nowrap;}
+.preset-save-btn:hover{background:var(--gold);color:#000;}
+.preset-list{display:flex;flex-wrap:wrap;gap:6px;}
+.preset-item{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.preset-load{padding:5px 12px;background:var(--card);color:var(--soft);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;border:none;transition:all .15s;}
+.preset-load:hover{background:rgba(245,200,66,.1);color:var(--text);}
+.preset-load.current{background:rgba(245,200,66,.15);color:var(--gold);font-weight:700;}
+.preset-del{padding:5px 8px;background:var(--surface);color:var(--dim);cursor:pointer;font-size:11px;border:none;border-left:1px solid var(--border);transition:all .15s;}
+.preset-del:hover{background:rgba(232,66,96,.15);color:var(--red);}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow">北向きさん麻雀部 / 成績分析</div>
+      <h1>麻雀<em>ダッシュボード</em></h1>
+      <p class="subtitle">Excelファイルをアップロードして自動解析</p>
+      <p class="data-date" id="dataDateLabel"></p>
+    </div>
+    <div class="header-right">
+      <div class="upload-zone-compact" id="uploadZone">
+        <div class="upload-icon">📂</div>
+        <div>
+          <div class="upload-text"><strong>Excelをアップロード</strong><br>ドラッグ＆ドロップまたはクリック</div>
+          <div class="upload-filename" id="uploadFilename"></div>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+      </div>
+      <button class="export-btn" id="exportBtn" style="display:none" onclick="exportShared()">
+        📤 共有用HTMLを保存
+      </button>
+    </div>
+  </header>
+
+  <div id="mainApp" style="display:none">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="ranking">🏆 総合ランキング</button>
+      <button class="tab-btn" data-tab="compare">📊 プレイヤー比較</button>
+      <button class="tab-btn" data-tab="settings">⚙️ スコア算出設定</button>
+    </div>
+
+    <!-- ═══ RANKING TAB ═══ -->
+    <div class="tab-pane active" id="tab-ranking">
+      <div id="formulaSummary" class="settings-box" style="padding:14px 20px;margin-bottom:24px;">
+        <div style="display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12px;align-items:center;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:.2em;margin-right:4px;">WEIGHTS</span>
+          <span id="summaryElo" style="color:var(--soft)"></span>
+          <span id="summaryTop" style="color:var(--soft)"></span>
+          <span id="summary4th" style="color:var(--soft)"></span>
+          <span id="summaryAve" style="color:var(--soft)"></span>
+          <span id="summaryTS"  style="color:var(--soft)"></span>
+          <span id="summaryRen" style="color:var(--soft)"></span>
+          <span style="font-size:11px;color:var(--soft);margin-left:auto" id="summaryTotal"></span>
+        </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <div class="section-label">対象期間</div>
+        <div class="controls" id="rankPeriodSelector"></div>
+      </div>
+      <div style="margin-bottom:28px">
+        <div class="section-label">並び替え</div>
+        <div class="controls">
+          <button class="sort-btn active" data-sort="final">総合スコア</button>
+          <button class="sort-btn" data-sort="elo">Elo rating</button>
+          <button class="sort-btn" data-sort="TOP率">TOP率</button>
+          <button class="sort-btn" data-sort="4着回避率">4着回避</button>
+          <button class="sort-btn" data-sort="Ave.Score">Ave.Score</button>
+          <button class="sort-btn" data-sort="Total Score">TotalScore</button>
+          <button class="sort-btn" data-sort="連対率">連対率</button>
+        </div>
+      </div>
+      <div id="podium"></div>
+      <div class="ranking-list" id="rankingList"></div>
+    </div>
+
+    <!-- ═══ COMPARE TAB ═══ -->
+    <div class="tab-pane" id="tab-compare">
+      <div style="margin-bottom:20px">
+        <div class="section-label">対象期間</div>
+        <div class="controls" id="cmpPeriodSelector"></div>
+      </div>
+      <div class="player-selector">
+        <div class="selector-label">プレイヤー選択（最大6名）</div>
+        <div class="player-grid" id="playerGrid"></div>
+      </div>
+      <div id="compareContent"><div class="select-hint">↑ 上のボタンからプレイヤーを選んでください</div></div>
+    </div>
+
+    <!-- ═══ SETTINGS TAB ═══ -->
+    <div class="tab-pane" id="tab-settings">
+      <div class="settings-box">
+        <h3>スコア算出設定</h3>
+        <div class="weight-grid" id="weightGrid"></div>
+        <div class="total-row">
+          <span class="total-label">合計</span>
+          <span class="total-val" id="weightTotal">100%</span>
+          <span class="total-warn" id="weightWarn" style="display:none">⚠ 合計が100%になるよう調整してください</span>
+          <button class="update-btn" id="applyWeightBtn" onclick="applyWeights()">ランキングに反映</button>
+        </div>
+
+        <div class="preset-section">
+          <h4>プリセット</h4>
+          <div class="preset-save-row">
+            <input type="text" class="preset-name-input" id="presetNameInput" placeholder="プリセット名を入力">
+            <button class="preset-save-btn" onclick="savePreset()">💾 保存</button>
+          </div>
+          <div class="preset-list" id="presetList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="noDataMsg" class="no-data">
+    <div class="icon">🀄</div>
+    <p>上のエリアにExcelファイルをアップロードすると<br>データが自動で読み込まれます</p>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// EXCEL PARSE
+// ════════════════════════════════════════════════
+const STAT_OFFSETS = {
+  '参加日数':0,'半荘':1,'Total Score':2,'Ave.Score':4,
+  'TOP':6,'2着':7,'3着':8,'4着':9,
+  'TOP率':10,'連対率':11,'4着回避率':12,'Rank Rating':13,'役満':17
+};
+
+function parseExcel(buffer) {
+  const wb = XLSX.read(buffer, {type:'array', cellFormula:false, cellNF:false});
+  const sheetName = wb.SheetNames.find(s => !s.includes('カップ')) || wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+
+  function cv(row, col) {
+    const cell = ws[XLSX.utils.encode_cell({r:row, c:col})];
+    if (!cell || cell.v == null) return null;
+    if (typeof cell.v === 'string' && cell.v.startsWith('#')) return null;
+    return cell.v;
+  }
+  function nv(row, col) {
+    const v = cv(row, col);
+    if (v === null) return null;
+    const n = Number(v);
+    return isNaN(n) ? null : n;
+  }
+
+  // セクション検出（B列）
+  const sections = {};
+  for (let r = 0; r < 200; r++) {
+    const v = cv(r, 1);
+    if (v === 'TOTAL') sections['TOTAL'] = r;
+    else if (typeof v === 'number' && v >= 2020 && v <= 2100) sections[String(Math.floor(v))] = r;
+  }
+
+  // 最終実施日: C列=月日シリアル、次行D列=年
+  let lastDate = null;
+  const excelEpoch = new Date(1899, 11, 30);
+  let latestMs = 0;
+  for (let r = 0; r < 900; r++) {
+    const cCell = ws[XLSX.utils.encode_cell({r, c:2})];
+    if (!cCell) continue;
+    const isSerial  = (cCell.t === 'n' || cCell.t == null) && typeof cCell.v === 'number' && cCell.v > 40000 && cCell.v < 60000;
+    const isDateObj = cCell.t === 'd' && cCell.v instanceof Date;
+    if (!isSerial && !isDateObj) continue;
+    const yearCell = ws[XLSX.utils.encode_cell({r:r+1, c:3})];
+    if (!yearCell || typeof yearCell.v !== 'number' || yearCell.v < 2000 || yearCell.v > 2100) continue;
+    const year = Math.floor(yearCell.v);
+    let month, day;
+    if (isDateObj) { month = cCell.v.getMonth()+1; day = cCell.v.getDate(); }
+    else { const d = new Date(excelEpoch.getTime() + cCell.v*86400000); month = d.getMonth()+1; day = d.getDate(); }
+    const ms = new Date(year, month-1, day).getTime();
+    if (ms > latestMs) latestMs = ms;
+  }
+  if (latestMs) {
+    const d = new Date(latestMs);
+    lastDate = `${d.getFullYear()}年${String(d.getMonth()+1).padStart(2,'0')}月${String(d.getDate()).padStart(2,'0')}日`;
+  }
+
+  // プレイヤー名→列番号マップ（0-indexed）
+  const playerCols = {};
+  for (let col = 6; col < 62; col += 2) {
+    const nameRaw = cv(1, col);
+    if (!nameRaw || String(nameRaw) === 'Check') continue;
+    const name = String(nameRaw).split('\n')[0].trim();
+    if (name) playerCols[name] = col;
+  }
+
+  // 集計データ（既存）
+  const players = {};
+  for (const [name, col] of Object.entries(playerCols)) {
+    players[name] = {};
+    for (const [sec, base] of Object.entries(sections)) {
+      const p = {};
+      for (const [stat, off] of Object.entries(STAT_OFFSETS)) p[stat] = nv(base+off, col);
+      if (p['半荘'] > 0) players[name][sec] = p;
+    }
+    if (!Object.keys(players[name]).length) delete players[name];
+  }
+
+  // 半荘単位の試合データ抽出
+  // E列(col4,0-indexed)=1 かつ D列=年 の行が各半荘
+  // プレイヤー列=スコア、プレイヤー列+1=順位(1-4)
+  const games = [];
+  for (let r = 100; r < 1500; r++) {
+    const eVal = nv(r, 4);
+    const dVal = nv(r, 3);
+    if (eVal !== 1 || !dVal || dVal < 2020 || dVal > 2100) continue;
+    const year = Math.floor(dVal);
+    const participants = [];
+    for (const [name, scoreCol] of Object.entries(playerCols)) {
+      const score = nv(r, scoreCol);
+      const rank  = nv(r, scoreCol + 1);
+      if (score !== null && rank !== null && rank >= 1 && rank <= 4) {
+        participants.push({name, score, rank});
+      }
+    }
+    if (participants.length === 4) games.push({year, players: participants});
+  }
+
+  return { players, years: Object.keys(sections).filter(s=>s!=='TOTAL').sort().reverse(), lastDate, games };
+}
+
+// ════════════════════════════════════════════════
+// ELO RATING
+// ════════════════════════════════════════════════
+const ELO_K = 40;
+const ELO_INIT = 1500;
+let ELO_RATINGS = {};  // name -> elo (全期間、反復収束済み)
+
+function calcElo(games) {
+  if (!games || !games.length) return {};
+  const allNames = new Set();
+  games.forEach(g => g.players.forEach(p => allNames.add(p.name)));
+
+  // 順位別実績スコア（麻雀の価値構造を反映）
+  const RANK_SCORE = {1: 1.0, 2: 0.6, 3: 0.4, 4: 0.0};
+
+  // 反復計算（5回で収束）
+  let elo = {};
+  allNames.forEach(n => elo[n] = ELO_INIT);
+
+  for (let iter = 0; iter < 5; iter++) {
+    const delta = {};
+    allNames.forEach(n => delta[n] = 0);
+
+    games.forEach(g => {
+      const ps = g.players;  // [{name, score, rank}] × 4
+      ps.forEach(p => {
+        // 対戦相手3人の期待勝率の平均
+        const opponents = ps.filter(o => o.name !== p.name);
+        const expAvg = opponents.reduce((sum, o) => {
+          return sum + 1 / (1 + Math.pow(10, ((elo[o.name] ?? ELO_INIT) - (elo[p.name] ?? ELO_INIT)) / 400));
+        }, 0) / opponents.length;
+        const actual = RANK_SCORE[p.rank] ?? 0.5;
+        delta[p.name] += ELO_K * (actual - expAvg);
+      });
+    });
+    allNames.forEach(n => elo[n] = (elo[n] ?? ELO_INIT) + delta[n]);
+  }
+  return elo;
+}
+
+// ════════════════════════════════════════════════
+// WEIGHTS & RATING
+// ════════════════════════════════════════════════
+// 指標順: Elo rating → TOP率 → 4着回避率 → Ave.Score → TotalScore → 連対率
+const METRIC_ORDER = ['Elo','TOP率','4着回避率','Ave.Score','TotalScore','連対率'];
+const DEFAULT_WEIGHTS = {'Elo':25,'TOP率':25,'4着回避率':25,'Ave.Score':15,'TotalScore':10,'連対率':0};
+
+let WEIGHTS = {...DEFAULT_WEIGHTS};
+let GMM = {};
+
+function buildGMM(raw) {
+  GMM = {};
+  const metricsFromRaw = ['TOP率','4着回避率','Ave.Score','TotalScore','連対率'];
+  for (const m of metricsFromRaw) {
+    const key = m === 'TotalScore' ? 'Total Score' : m;
+    const vals = Object.values(raw).filter(p=>p['TOTAL']).map(p=>p['TOTAL'][key]).filter(v=>v!=null);
+    if (vals.length) GMM[m] = [Math.min(...vals), Math.max(...vals)];
+  }
+  const eloVals = Object.values(ELO_RATINGS).filter(v=>v!=null);
+  if (eloVals.length) GMM['Elo'] = [Math.min(...eloVals), Math.max(...eloVals)];
+}
+
+function normG(val, m) {
+  if (!GMM[m]) return 50;
+  const [mn, mx] = GMM[m];
+  if (mx === mn) return 50;
+  return Math.max(0, Math.min(100, (val-mn)/(mx-mn)*100));
+}
+
+// 動的信頼補正: k = max(5, 期間中央値 × 0.5)
+function calcCred(hanso, medianHanso) {
+  const k = Math.max(5, medianHanso * 0.5);
+  return hanso > 0 ? hanso / (hanso + k) : 0;
+}
+
+function calcRatings(raw, section) {
+  const names = Object.keys(raw).filter(n => raw[n][section]);
+  if (!names.length) return {ranked:[], unranked:[], minHanso:4};
+
+  // 対象期間のゲームのみでElo計算
+  const sectionGames = section === 'TOTAL'
+    ? GAMES
+    : GAMES.filter(g => String(g.year) === String(section));
+  const sectionElo = calcElo(sectionGames);
+
+  const hansoList = names.map(n=>raw[n][section]['半荘']??0).sort((a,b)=>a-b);
+  const median = hansoList[Math.floor(hansoList.length/2)];
+  const minHanso = Math.max(4, Math.floor(median/3));
+
+  // Elo正規化用min/max（この期間の参加者のみ）
+  const eloVals = names.map(n => sectionElo[n] ?? ELO_INIT);
+  const eloMin = Math.min(...eloVals), eloMax = Math.max(...eloVals);
+  function normElo(v) {
+    return eloMax === eloMin ? 50 : Math.max(0, Math.min(100, (v - eloMin) / (eloMax - eloMin) * 100));
+  }
+
+  // TotalScore正規化用min/max（この期間）
+  const tsVals = names.map(n => raw[n][section]['Total Score'] ?? 0);
+  const tsMin = Math.min(...tsVals), tsMax = Math.max(...tsVals);
+  function normTS(v) {
+    return tsMax === tsMin ? 50 : Math.max(0, Math.min(100, (v - tsMin) / (tsMax - tsMin) * 100));
+  }
+
+  const ranked = [], unranked = [];
+  names.forEach(name => {
+    const d = raw[name][section];
+    const elo = sectionElo[name] ?? ELO_INIT;
+    const norms = {};
+    let weighted = 0;
+    for (const m of METRIC_ORDER) {
+      let val, norm;
+      if (m === 'Elo') {
+        val = elo; norm = normElo(elo);
+      } else if (m === 'TotalScore') {
+        val = d['Total Score'] ?? 0; norm = normTS(val);
+      } else {
+        val = d[m] ?? 0; norm = normG(val, m);
+      }
+      norms[m] = norm;
+      weighted += norm * (WEIGHTS[m]/100);
+    }
+    const c = calcCred(d['半荘']??0, median);
+    const final = c*weighted + (1-c)*50;
+    const entry = {name, ...d, elo, norms, weighted, cred:c, final};
+    ((d['半荘']??0) >= minHanso ? ranked : unranked).push(entry);
+  });
+  return {ranked, unranked, minHanso};
+}
+
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let RAW={}, YEARS=[], GAMES=[], RANKED=[], UNRANKED=[], MIN_HANSO=4;
+let CUR_RANK_SEC='', CUR_CMP_SEC='', CUR_SORT='final';
+let SEL_PLAYERS=[], CMP_CHARTS={};
+
+// ════════════════════════════════════════════════
+// UPLOAD
+// ════════════════════════════════════════════════
+const zone   = document.getElementById('uploadZone');
+const finput = document.getElementById('fileInput');
+zone.addEventListener('click', ()=>finput.click());
+zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('drag-over');});
+zone.addEventListener('dragleave', ()=>zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e=>{e.preventDefault();zone.classList.remove('drag-over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+finput.addEventListener('change', e=>{if(e.target.files[0])loadFile(e.target.files[0]);});
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const buf = new Uint8Array(e.target.result);
+      const parsed = parseExcel(buf);
+      RAW = parsed.players; YEARS = parsed.years; GAMES = parsed.games || [];
+      // Elo計算（全期間・反復収束）
+      ELO_RATINGS = calcElo(GAMES);
+      buildGMM(RAW);
+
+      // デフォルト = 最新年
+      const defSec = YEARS.length ? YEARS[0] : 'TOTAL';
+      CUR_RANK_SEC = defSec;
+      CUR_CMP_SEC  = defSec;
+      CUR_SORT = 'final';
+
+      buildPeriodBtns('rankPeriodSelector', defSec, 'rank');
+      buildPeriodBtns('cmpPeriodSelector',  defSec, 'cmp');
+      applyRankSection(defSec);
+      applyCmpSection(defSec);
+      buildWeightGrid();
+      renderPresets();
+      updateSummary();
+
+      if (parsed.lastDate) {
+        const lbl = document.getElementById('dataDateLabel');
+        lbl.textContent = '📅 最終実施日：' + parsed.lastDate;
+        lbl.style.display = 'block';
+      }
+      document.getElementById('uploadFilename').textContent =
+        `✓ ${file.name} — ${Object.keys(RAW).length}名のデータを読み込みました`;
+      document.getElementById('mainApp').style.display = 'block';
+      document.getElementById('noDataMsg').style.display = 'none';
+      document.getElementById('exportBtn').style.display = 'flex';
+    } catch(err) {
+      document.getElementById('uploadFilename').textContent = '⚠ 読み込みエラー: '+err.message;
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function buildPeriodBtns(containerId, activeSec, type) {
+  const c = document.getElementById(containerId);
+  const periods = ['TOTAL', ...YEARS];
+  const labels = {TOTAL:'全期間'};
+  YEARS.forEach(y => labels[y] = y+'年');
+  c.innerHTML = periods.map(p =>
+    `<button class="period-btn${p===activeSec?' active':''}" data-section="${p}" data-type="${type}">${labels[p]}</button>`
+  ).join('');
+}
+
+function applyRankSection(sec) {
+  CUR_RANK_SEC = sec;
+  const r = calcRatings(RAW, sec);
+  RANKED=r.ranked; UNRANKED=r.unranked; MIN_HANSO=r.minHanso;
+  renderRanking();
+  document.querySelectorAll('[data-type="rank"].period-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.section===sec)
+  );
+}
+
+function applyCmpSection(sec) {
+  CUR_CMP_SEC = sec;
+  renderPlayerBtns();
+  renderCompare();
+  document.querySelectorAll('[data-type="cmp"].period-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.section===sec)
+  );
+}
+
+// 期間・ソートボタン イベント委譲
+document.addEventListener('click', e => {
+  const pb = e.target.closest('.period-btn');
+  if (pb) {
+    if (pb.dataset.type === 'rank') applyRankSection(pb.dataset.section);
+    else if (pb.dataset.type === 'cmp') applyCmpSection(pb.dataset.section);
+    return;
+  }
+  const sb = e.target.closest('.sort-btn');
+  if (sb) {
+    CUR_SORT = sb.dataset.sort;
+    document.querySelectorAll('.sort-btn').forEach(b=>b.classList.toggle('active', b===sb));
+    renderRanking();
+  }
+});
+
+// ════════════════════════════════════════════════
+// RANKING
+// ════════════════════════════════════════════════
+function grade(s) {
+  if (s>=85) return {label:'S+',cls:'badge-s'};
+  if (s>=70) return {label:'S', cls:'badge-s'};
+  if (s>=55) return {label:'A', cls:'badge-a'};
+  if (s>=40) return {label:'B', cls:'badge-b'};
+  return           {label:'C', cls:'badge-c'};
+}
+function credColor(c) { return c>=.75?'#42e8a0':c>=.5?'#f5c842':'#e84260'; }
+
+function renderPodium(sorted) {
+  const el = document.getElementById('podium');
+  if (sorted.length < 3) { el.innerHTML=''; return; }
+  const ord=[sorted[1],sorted[0],sorted[2]], cls=['podium-2nd','podium-1st','podium-3rd'], num=['2','1','3'];
+  el.innerHTML = '<div class="podium">'+ord.map((d,i)=>`
+    <div class="podium-item ${cls[i]}">
+      <div class="podium-name">${d.name}</div>
+      <div class="podium-score-disp">${d.final.toFixed(1)}</div>
+      <div class="podium-block">${num[i]}</div>
+    </div>`).join('')+'</div>';
+}
+
+function renderRanking() {
+  const sorted = [...RANKED].sort((a,b)=>b[CUR_SORT]-a[CUR_SORT]);
+  const byFinal = [...RANKED].sort((a,b)=>b.final-a.final);
+  const finalRank = Object.fromEntries(byFinal.map((d,i)=>[d.name,i+1]));
+  if (CUR_SORT==='final') renderPodium(byFinal); else document.getElementById('podium').innerHTML='';
+
+  const scoreFmt = {
+    'final':       d=>({val:d.final.toFixed(1),                                        sub:`cred ${(d.cred*100).toFixed(0)}%`,dot:credColor(d.cred)}),
+    'elo':         d=>({val:Math.round(d.elo).toString(),                              sub:`総合 #${finalRank[d.name]}`}),
+    'TOP率':       d=>({val:(d['TOP率']*100).toFixed(1)+'%',                           sub:`総合 #${finalRank[d.name]}`}),
+    '4着回避率':   d=>({val:(d['4着回避率']*100).toFixed(1)+'%',                       sub:`総合 #${finalRank[d.name]}`}),
+    'Ave.Score':   d=>({val:(d['Ave.Score']>=0?'+':'')+d['Ave.Score'].toFixed(2)+'pt', sub:`総合 #${finalRank[d.name]}`}),
+    'Total Score': d=>({val:(d['Total Score']>0?'+':'')+d['Total Score']+'pt',         sub:`総合 #${finalRank[d.name]}`}),
+    '連対率':      d=>({val:(d['連対率']*100).toFixed(1)+'%',                          sub:`総合 #${finalRank[d.name]}`}),
+  };
+
+  const list = document.getElementById('rankingList');
+  list.innerHTML = '';
+  sorted.forEach((d,i) => {
+    const rank=i+1, isFinal=CUR_SORT==='final';
+    const medalCls = isFinal&&rank<=3?`rank-${rank}`:(finalRank[d.name]<=3?`rank-${finalRank[d.name]}`:'');
+    const g=grade(d.final), sf=(scoreFmt[CUR_SORT]||scoreFmt['final'])(d);
+    const bars=[
+      {label:'TOP率',  val:((d['TOP率']??0)*100).toFixed(0)+'%',                            norm:d.norms['TOP率']??0,     color:'#42e8a0'},
+      {label:'4着回避',val:((d['4着回避率']??0)*100).toFixed(0)+'%',                        norm:d.norms['4着回避率']??0, color:'#c882e8'},
+      {label:'平均Pt', val:((d['Ave.Score']??0)>=0?'+':'')+(d['Ave.Score']??0).toFixed(1), norm:d.norms['Ave.Score']??0, color:'#f5c842'},
+      {label:'連対率', val:((d['連対率']??0)*100).toFixed(0)+'%',                           norm:d.norms['連対率']??0,    color:'#4290e8'},
+    ];
+    const details=[
+      {name:'Elo rating',      val:Math.round(d.elo).toString(),      unit:'',   norm:d.norms['Elo']},
+      {name:'TOP率',           val:((d['TOP率']??0)*100).toFixed(1),  unit:'%',  norm:d.norms['TOP率']},
+      {name:'4着回避率',       val:((d['4着回避率']??0)*100).toFixed(1), unit:'%', norm:d.norms['4着回避率']},
+      {name:'平均スコア',      val:(d['Ave.Score']??0).toFixed(2),    unit:'pt', norm:d.norms['Ave.Score']},
+      {name:'合計スコア',      val:d['Total Score']??'-',             unit:'pt', norm:d.norms['TotalScore']},
+      {name:'連対率',          val:((d['連対率']??0)*100).toFixed(1), unit:'%',  norm:d.norms['連対率']},
+      {name:'信頼補正',        val:(d.cred*100).toFixed(0),           unit:'%',  norm:d.cred*100},
+      {name:'半荘数',          val:d['半荘']??'-',                    unit:'局', norm:null},
+      {name:'役満',            val:d['役満']??0,                      unit:'回', norm:null},
+    ];
+    const el=document.createElement('div');
+    el.className=`rank-item${medalCls?' '+medalCls:''}`;
+    el.innerHTML=`
+      <div class="rank-num">${rank}</div>
+      <div class="rank-main">
+        <div class="rank-name-row">
+          <span class="rank-name">${d.name}</span>
+          <span class="rank-badge ${g.cls}">${g.label}</span>
+          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">${d['半荘']}局</span>
+        </div>
+        <div class="rank-bars">
+          ${bars.map(b=>`<div class="mini-bar">
+            <span class="mini-label" style="color:${b.color}">${b.label}</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${Math.max(0,b.norm).toFixed(0)}%;background:${b.color}"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">${b.val}</span>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="rank-score-col">
+        <div class="score-number" style="font-size:${isFinal?'26px':'20px'}">${sf.val}</div>
+        <div class="score-label">${sf.dot?`<span class="cred-dot" style="background:${sf.dot}"></span>`:''}${sf.sub}</div>
+      </div>
+      <div class="rank-detail">
+        ${details.map(s=>`<div class="detail-stat">
+          <div class="detail-stat-name">${s.name}</div>
+          <div class="detail-stat-val">${s.val}<span class="detail-stat-unit">${s.unit}</span></div>
+          ${s.norm!=null?`<div class="detail-bar"><div class="detail-bar-fill" style="width:${Math.max(0,s.norm).toFixed(0)}%"></div></div><div class="detail-stat-norm">${s.norm.toFixed(0)}/100</div>`:''}
+        </div>`).join('')}
+      </div>`;
+    el.addEventListener('click',()=>el.classList.toggle('expanded'));
+    list.appendChild(el);
+  });
+
+  if (UNRANKED.length) {
+    const div=document.createElement('div');
+    div.style.cssText='margin:20px 0 10px;display:flex;align-items:center;gap:12px;';
+    div.innerHTML=`<div style="flex:1;height:1px;background:var(--border)"></div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--soft);letter-spacing:.15em;white-space:nowrap">参加数不足（${MIN_HANSO}局未満）— ランキング対象外</div>
+      <div style="flex:1;height:1px;background:var(--border)"></div>`;
+    list.appendChild(div);
+    [...UNRANKED].sort((a,b)=>(b['半荘']??0)-(a['半荘']??0)).forEach(d=>{
+      const el=document.createElement('div');
+      el.style.cssText='display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;opacity:.6;margin-bottom:4px;';
+      el.innerHTML=`<div style="font-size:12px;color:var(--dim);width:30px;text-align:center">—</div>
+        <div style="font-weight:700;font-size:14px;flex:1">${d.name}</div>
+        <div style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">${d['半荘']}局</div>
+        <div style="font-size:11px;color:var(--soft)">平均 ${(d['Ave.Score']??0)>=0?'+':''}${(d['Ave.Score']??0).toFixed(1)}pt</div>
+        <div style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">データ不足</div>`;
+      list.appendChild(el);
+    });
+  }
+}
+
+// 算出式サマリー（ランキングタブ上部）
+function updateSummary() {
+  const total = METRIC_ORDER.reduce((s,m)=>s+WEIGHTS[m],0);
+  const ok = total === 100;
+  document.getElementById('summaryElo').innerHTML = `<span style="color:var(--gold)">Elo rating</span> <strong style="color:var(--text)">${WEIGHTS['Elo']}%</strong>`;
+  document.getElementById('summaryTop').innerHTML = `<span style="color:var(--gold)">TOP率</span> <strong style="color:var(--text)">${WEIGHTS['TOP率']}%</strong>`;
+  document.getElementById('summary4th').innerHTML = `<span style="color:var(--gold)">4着回避率</span> <strong style="color:var(--text)">${WEIGHTS['4着回避率']}%</strong>`;
+  document.getElementById('summaryAve').innerHTML = `<span style="color:var(--gold)">Ave.Score</span> <strong style="color:var(--text)">${WEIGHTS['Ave.Score']}%</strong>`;
+  document.getElementById('summaryTS').innerHTML  = `<span style="color:var(--gold)">TotalScore</span> <strong style="color:var(--text)">${WEIGHTS['TotalScore']}%</strong>`;
+  document.getElementById('summaryRen').innerHTML = `<span style="color:var(--gold)">連対率</span> <strong style="color:var(--text)">${WEIGHTS['連対率']}%</strong>`;
+  document.getElementById('summaryTotal').textContent = ok ? '✓ 合計100%' : `⚠ 合計${total}%`;
+  document.getElementById('summaryTotal').style.color = ok ? 'var(--green)' : 'var(--red)';
+}
+
+// ════════════════════════════════════════════════
+// COMPARE
+// ════════════════════════════════════════════════
+const COLORS=['#f5c842','#42e8a0','#e84260','#a042e8','#4290e8','#e842a0'];
+
+function getCmpData() {
+  return calcRatings(RAW, CUR_CMP_SEC);
+}
+
+function renderPlayerBtns() {
+  const grid=document.getElementById('playerGrid');
+  grid.innerHTML='';
+  const r=getCmpData();
+  [...r.ranked,...r.unranked].sort((a,b)=>b.final-a.final).forEach(d=>{
+    const idx=SEL_PLAYERS.indexOf(d.name);
+    const btn=document.createElement('button');
+    btn.className='player-btn'+(idx>=0?' active':'');
+    if(idx>=0) btn.style.background=COLORS[idx];
+    btn.textContent=d.name;
+    btn.onclick=()=>{
+      const i=SEL_PLAYERS.indexOf(d.name);
+      if(i>=0) SEL_PLAYERS.splice(i,1);
+      else if(SEL_PLAYERS.length<6) SEL_PLAYERS.push(d.name);
+      renderPlayerBtns(); renderCompare();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function destroyCmpCharts(){Object.values(CMP_CHARTS).forEach(c=>c&&c.destroy());CMP_CHARTS={};}
+
+function renderCompare() {
+  destroyCmpCharts();
+  const el=document.getElementById('compareContent');
+  if(!SEL_PLAYERS.length){el.innerHTML='<div class="select-hint">↑ 上のボタンからプレイヤーを選んでください</div>';return;}
+  const r=getCmpData();
+  const all=[...r.ranked,...r.unranked];
+  const sel=SEL_PLAYERS.map(n=>all.find(d=>d.name===n)).filter(Boolean);
+
+  const mconf=[
+    {key:'elo',        label:'Elo rating',  fmt:v=>Math.round(v).toString(),       range:[1300,1700]},
+    {key:'TOP率',      label:'TOP率',       fmt:v=>(v*100).toFixed(1)+'%',         range:[0,.5]},
+    {key:'4着回避率',  label:'4着回避率',   fmt:v=>(v*100).toFixed(1)+'%',         range:[.5,1]},
+    {key:'Ave.Score',  label:'Ave.Score',   fmt:v=>(v>0?'+':'')+v.toFixed(2)+'pt', range:null},
+    {key:'Total Score',label:'TotalScore',  fmt:v=>(v>0?'+':'')+v,                 range:null},
+    {key:'連対率',     label:'連対率',      fmt:v=>(v*100).toFixed(1)+'%',         range:[0,.8]},
+    {key:'半荘',       label:'半荘数',      fmt:v=>v+'局',                         range:null},
+  ];
+  function nr(v,c){
+    if(!c.range){const vals=sel.map(d=>d[c.key]),mn=Math.min(...vals),mx=Math.max(...vals);return mx===mn?50:(v-mn)/(mx-mn)*100;}
+    return Math.max(0,Math.min(100,(v-c.range[0])/(c.range[1]-c.range[0])*100));
+  }
+  let sHtml='<div class="stats-grid">';
+  mconf.forEach(m=>{
+    const ss=[...sel].sort((a,b)=>b[m.key]-a[m.key]);
+    sHtml+=`<div class="stat-card"><div class="stat-name">${m.label}</div>`;
+    ss.forEach(d=>{
+      const col=COLORS[SEL_PLAYERS.indexOf(d.name)];
+      sHtml+=`<div><div class="stat-row"><span class="stat-player"><span class="dot" style="background:${col}"></span>${d.name}</span><span class="stat-val" style="color:${col}">${m.fmt(d[m.key])}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${nr(d[m.key],m).toFixed(0)}%;background:${col}"></div></div></div>`;
+    });
+    sHtml+='</div>';
+  });
+  sHtml+='</div>';
+
+  el.innerHTML=sHtml+
+    `<div class="radar-card"><div class="chart-title">能力レーダーチャート</div><div class="radar-wrap"><canvas id="radarC"></canvas></div></div>`+
+    `<div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">着順分布（比率）</div><div class="chart-wrap"><canvas id="placeC"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">合計スコア比較</div><div class="chart-wrap"><canvas id="scoreC"></canvas></div></div>
+    </div>`;
+
+  const rm=[{key:'TOP率',mn:0,mx:.4},{key:'連対率',mn:0,mx:.75},{key:'4着回避率',mn:.5,mx:1},{key:'elo',mn:1300,mx:1700},{key:'Ave.Score',mn:-25,mx:30}];
+  CMP_CHARTS.radar=new Chart(document.getElementById('radarC'),{type:'radar',data:{
+    labels:['TOP率','連対率','4着\n回避率','Elo','平均Pt'],
+    datasets:sel.map((d,i)=>({label:d.name,data:rm.map(m=>Math.max(0,Math.min(10,(d[m.key]-m.mn)/(m.mx-m.mn)*10))),
+      borderColor:COLORS[i],backgroundColor:COLORS[i]+'22',pointBackgroundColor:COLORS[i],borderWidth:2,pointRadius:4}))
+  },options:{responsive:true,maintainAspectRatio:false,
+    scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#6a6a8a',font:{size:9}},grid:{color:'#2a2a40'},
+      pointLabels:{color:'#aaaacc',font:{size:10,family:'Noto Sans JP'}},angleLines:{color:'#2a2a40'}}},
+    plugins:{legend:{labels:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:11}}}}}});
+
+  CMP_CHARTS.place=new Chart(document.getElementById('placeC'),{type:'bar',data:{
+    labels:sel.map(d=>d.name),
+    datasets:['TOP','2着','3着','4着'].map((p,i)=>({label:p,data:sel.map(d=>((d[p]??0)/d['半荘']*100).toFixed(1)),
+      backgroundColor:['#f5c842','#42e8a0','#8888aa','#e84260'][i]}))
+  },options:{responsive:true,maintainAspectRatio:false,
+    scales:{x:{stacked:true,ticks:{color:'#aaa',font:{family:'Noto Sans JP',size:10}},grid:{color:'#1a1a26'}},
+      y:{stacked:true,max:100,ticks:{color:'#666',callback:v=>v+'%'},grid:{color:'#2a2a40'}}},
+    plugins:{legend:{labels:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:10}}}}}});
+
+  CMP_CHARTS.score=new Chart(document.getElementById('scoreC'),{type:'bar',data:{
+    labels:sel.map(d=>d.name),
+    datasets:[{label:'合計スコア',data:sel.map(d=>d['Total Score']),
+      backgroundColor:sel.map((_,i)=>COLORS[i]+'bb'),borderColor:sel.map((_,i)=>COLORS[i]),borderWidth:2}]
+  },options:{responsive:true,maintainAspectRatio:false,
+    scales:{x:{ticks:{color:'#aaa',font:{family:'Noto Sans JP',size:10}},grid:{color:'#1a1a26'}},
+      y:{ticks:{color:'#666'},grid:{color:'#2a2a40'}}},
+    plugins:{legend:{labels:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:10}}}}}});
+}
+
+// ════════════════════════════════════════════════
+// WEIGHT SETTINGS
+// ════════════════════════════════════════════════
+function buildWeightGrid() {
+  const grid = document.getElementById('weightGrid');
+  grid.innerHTML = '';
+  METRIC_ORDER.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'weight-item';
+    div.id = `wi_${m}`;
+    div.innerHTML = `
+      <div class="weight-label">${m}</div>
+      <div class="weight-input-row">
+        <button class="weight-ud" onclick="nudgeWeight('${m}',-1)">▼</button>
+        <input class="weight-val" type="number" id="wv_${m}" value="${WEIGHTS[m]}" min="0" max="100"
+          oninput="onWeightInput('${m}',this.value)">
+        <span class="weight-pct">%</span>
+        <button class="weight-ud" onclick="nudgeWeight('${m}',1)">▲</button>
+      </div>`;
+    grid.appendChild(div);
+  });
+  refreshWeightUI();
+}
+
+function nudgeWeight(m, delta) {
+  const inp = document.getElementById(`wv_${m}`);
+  const newVal = Math.max(0, Math.min(100, (WEIGHTS[m]||0) + delta));
+  WEIGHTS[m] = newVal;
+  inp.value = newVal;
+  refreshWeightUI();
+}
+
+function onWeightInput(m, val) {
+  const n = parseInt(val, 10);
+  WEIGHTS[m] = isNaN(n) ? 0 : Math.max(0, Math.min(100, n));
+  refreshWeightUI();
+}
+
+function refreshWeightUI() {
+  const total = METRIC_ORDER.reduce((s,m)=>s+(WEIGHTS[m]||0), 0);
+  const ok = total === 100;
+  const tv = document.getElementById('weightTotal');
+  const tw = document.getElementById('weightWarn');
+  const ab = document.getElementById('applyWeightBtn');
+  tv.textContent = total + '%';
+  tv.className = 'total-val ' + (ok ? 'total-ok' : 'total-ng');
+  tw.style.display = ok ? 'none' : 'inline';
+  ab.disabled = !ok;
+  updateSummary();
+}
+
+function applyWeights() {
+  buildGMM(RAW);
+  applyRankSection(CUR_RANK_SEC);
+  updateSummary();
+  // タブをランキングに切り替え
+  switchTab('ranking');
+}
+
+// ════════════════════════════════════════════════
+// PRESETS
+// ════════════════════════════════════════════════
+const PRESET_KEY = 'mahjong_presets';
+const DEFAULT_PRESETS = [
+  {name:'デフォルト',  w:{'Elo':25,'TOP率':25,'4着回避率':25,'Ave.Score':15,'TotalScore':10,'連対率':0}},
+  {name:'4着回避重視', w:{'Elo':15,'TOP率':10,'4着回避率':40,'Ave.Score':15,'TotalScore':10,'連対率':10}},
+  {name:'TOP率重視',   w:{'Elo':15,'TOP率':40,'4着回避率':15,'Ave.Score':15,'TotalScore':10,'連対率':5}},
+];
+
+function loadPresets() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PRESET_KEY) || '[]');
+    return saved.length ? saved : DEFAULT_PRESETS;
+  } catch { return DEFAULT_PRESETS; }
+}
+
+function savePresetsToStorage(presets) {
+  localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+}
+
+function savePreset() {
+  const name = document.getElementById('presetNameInput').value.trim();
+  if (!name) { alert('プリセット名を入力してください'); return; }
+  const total = METRIC_ORDER.reduce((s,m)=>s+WEIGHTS[m],0);
+  if (total !== 100) { alert('合計が100%のときのみ保存できます'); return; }
+  const presets = loadPresets();
+  const existing = presets.findIndex(p=>p.name===name);
+  const entry = {name, w:{...WEIGHTS}};
+  if (existing >= 0) presets[existing] = entry; else presets.push(entry);
+  savePresetsToStorage(presets);
+  document.getElementById('presetNameInput').value = '';
+  renderPresets();
+}
+
+function loadPreset(name) {
+  const presets = loadPresets();
+  const p = presets.find(p=>p.name===name);
+  if (!p) return;
+  WEIGHTS = {...p.w};
+  METRIC_ORDER.forEach(m => {
+    const inp = document.getElementById(`wv_${m}`);
+    if (inp) inp.value = WEIGHTS[m];
+  });
+  refreshWeightUI();
+  renderPresets();
+}
+
+function deletePreset(name) {
+  const presets = loadPresets().filter(p=>p.name!==name);
+  savePresetsToStorage(presets);
+  renderPresets();
+}
+
+function renderPresets() {
+  const list = document.getElementById('presetList');
+  if (!list) return;
+  const presets = loadPresets();
+  const currentName = presets.find(p => METRIC_ORDER.every(m=>p.w[m]===WEIGHTS[m]))?.name || '';
+  list.innerHTML = '';
+  presets.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'preset-item';
+    div.innerHTML = `
+      <button class="preset-load${p.name===currentName?' current':''}" onclick="loadPreset('${p.name.replace(/'/g,"\\'")}')">${p.name}</button>
+      <button class="preset-del" onclick="deletePreset('${p.name.replace(/'/g,"\\'")}')" title="削除">✕</button>`;
+    list.appendChild(div);
+  });
+}
+
+// ════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));
+}
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>switchTab(btn.dataset.tab));
+});
+
+// ════════════════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════════════════
+function exportShared() {
+  const btn = document.getElementById('exportBtn');
+  btn.disabled = true; btn.textContent = '⏳ 生成中...';
+  try {
+    const lastDate = document.getElementById('dataDateLabel').textContent.replace('📅 最終実施日：','');
+    const dataJson = JSON.stringify({players:RAW, years:YEARS, lastDate, weights:WEIGHTS, games:GAMES});
+    const src = document.documentElement.outerHTML;
+    const viewerHtml = src
+      .replace('id="uploadZone"','id="uploadZone" style="display:none"')
+      .replace('id="noDataMsg"','id="noDataMsg" style="display:none"')
+      .replace('id="mainApp" style="display:none"','id="mainApp" style="display:block"')
+      .replace('id="exportBtn"','id="exportBtn" style="display:none"')
+      .replace('</body>',`
+<script>
+(function(){
+  const _d=${dataJson};
+  RAW=_d.players; YEARS=_d.years; GAMES=_d.games||[]; WEIGHTS=_d.weights||WEIGHTS;
+  ELO_RATINGS=calcElo(GAMES);
+  buildGMM(RAW);
+  const defSec=YEARS.length?YEARS[0]:'TOTAL';
+  CUR_RANK_SEC=defSec; CUR_CMP_SEC=defSec; CUR_SORT='final';
+  buildPeriodBtns('rankPeriodSelector',defSec,'rank');
+  buildPeriodBtns('cmpPeriodSelector',defSec,'cmp');
+  applyRankSection(defSec); applyCmpSection(defSec);
+  buildWeightGrid(); renderPresets(); updateSummary();
+  if(_d.lastDate){const lbl=document.getElementById('dataDateLabel');lbl.textContent='📅 最終実施日：'+_d.lastDate;lbl.style.display='block';}
+  const notice=document.createElement('div');
+  notice.style.cssText='text-align:center;padding:8px 16px;background:rgba(245,200,66,.08);border-bottom:1px solid rgba(245,200,66,.2);font-size:11px;color:var(--gold);font-family:"DM Mono",monospace;';
+  notice.textContent='📤 共有ビュー — ${lastDate}時点のデータ';
+  document.body.insertAdjacentElement('afterbegin',notice);
+})();
+<\/script></body>`);
+    const blob=new Blob([viewerHtml],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`麻雀ダッシュボード_${lastDate||'共有'}.html`; a.click();
+    URL.revokeObjectURL(url);
+    btn.textContent='✓ 保存しました';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='📤 共有用HTMLを保存';},2500);
+  } catch(err) {
+    btn.disabled=false; btn.textContent='⚠ エラー'; console.error(err);
+  }
+}
+</script>
+<script>
+// ════════════════════════════════════════════════
+// PWA SETUP
+// ════════════════════════════════════════════════
+(function() {
+  // ── アイコン生成（Canvas）──
+  function makeIcon(size) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    // 背景
+    ctx.fillStyle = '#05050a';
+    ctx.fillRect(0, 0, size, size);
+    // 丸角
+    ctx.globalCompositeOperation = 'destination-in';
+    const r = size * 0.22;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(size-r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size-r);
+    ctx.quadraticCurveTo(size, size, size-r, size);
+    ctx.lineTo(r, size);
+    ctx.quadraticCurveTo(0, size, 0, size-r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    // 背景再描画（丸角適用後）
+    ctx.fillStyle = '#05050a';
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(size-r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size-r);
+    ctx.quadraticCurveTo(size, size, size-r, size);
+    ctx.lineTo(r, size);
+    ctx.quadraticCurveTo(0, size, 0, size-r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fill();
+    // ゴールドの円
+    const cx = size/2, cy = size*0.44, rad = size*0.28;
+    const grad = ctx.createRadialGradient(cx, cy-rad*0.2, rad*0.1, cx, cy, rad);
+    grad.addColorStop(0, '#ffe566');
+    grad.addColorStop(1, '#c8960a');
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // 麻雀牌の線模様
+    ctx.strokeStyle = '#05050a';
+    ctx.lineWidth = size * 0.028;
+    ctx.beginPath();
+    ctx.moveTo(cx - rad*0.45, cy - rad*0.15);
+    ctx.lineTo(cx + rad*0.45, cy - rad*0.15);
+    ctx.moveTo(cx - rad*0.45, cy + rad*0.25);
+    ctx.lineTo(cx + rad*0.45, cy + rad*0.25);
+    ctx.stroke();
+    // テキスト「麻」
+    ctx.fillStyle = '#05050a';
+    ctx.font = `bold ${size*0.22}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('麻', cx, cy+rad*0.04);
+    // 下部テキスト
+    ctx.fillStyle = '#f5c842';
+    ctx.font = `bold ${size*0.11}px sans-serif`;
+    ctx.fillText('RANKING', cx, size*0.82);
+    return c.toDataURL('image/png');
+  }
+
+  const icon192 = makeIcon(192);
+  const icon512 = makeIcon(512);
+
+  // Apple Touch Icon
+  document.getElementById('appleIcon').href = icon192;
+
+  // ── マニフェスト生成 ──
+  const manifest = {
+    name: '北向きさん麻雀部ダッシュボード',
+    short_name: '麻雀部',
+    description: '麻雀成績管理・Eloレーティングダッシュボード',
+    start_url: './',
+    display: 'standalone',
+    background_color: '#05050a',
+    theme_color: '#05050a',
+    orientation: 'portrait-primary',
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  document.getElementById('pwaManifest').href = URL.createObjectURL(blob);
+
+  // ── Service Worker登録 ──
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+const CACHE = 'mahjong-v1';
+const URLS = [self.location.href.replace('/sw.js','/')];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});`;
+    const swBlob = new Blob([swCode], {type:'text/javascript'});
+    const swUrl = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swUrl, {scope:'./'})
+      .catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
