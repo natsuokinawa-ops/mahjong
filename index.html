@@ -535,15 +535,13 @@ function normG(val, m) {
   return Math.max(0, Math.min(100, (val-mn)/(mx-mn)*100));
 }
 
-// 動的信頼補正: k = max(5, 期間中央値 × 0.5)
-function calcCred(hanso, medianHanso) {
-  const k = Math.max(5, medianHanso * 0.5);
-  return hanso > 0 ? hanso / (hanso + k) : 0;
-}
+// 固定除外条件: 参加日数3日未満 または 半荘10回未満
+const MIN_DAYS = 3;
+const MIN_HANSO_FIXED = 10;
 
 function calcRatings(raw, section) {
   const names = Object.keys(raw).filter(n => raw[n][section]);
-  if (!names.length) return {ranked:[], unranked:[], minHanso:4};
+  if (!names.length) return {ranked:[], unranked:[]};
 
   // 対象期間のゲームのみでElo計算
   const sectionGames = section === 'TOTAL'
@@ -553,7 +551,6 @@ function calcRatings(raw, section) {
 
   const hansoList = names.map(n=>raw[n][section]['半荘']??0).sort((a,b)=>a-b);
   const median = hansoList[Math.floor(hansoList.length/2)];
-  const minHanso = Math.max(4, Math.floor(median/3));
 
   // Elo正規化用min/max（この期間の参加者のみ）
   const eloVals = names.map(n => sectionElo[n] ?? ELO_INIT);
@@ -569,8 +566,8 @@ function calcRatings(raw, section) {
     return tsMax === tsMin ? 50 : Math.max(0, Math.min(100, (v - tsMin) / (tsMax - tsMin) * 100));
   }
 
-  const ranked = [], unranked = [];
-  names.forEach(name => {
+  // 各プレイヤーのスコア計算（補正あり・なし両方）
+  function calcEntry(name) {
     const d = raw[name][section];
     const elo = sectionElo[name] ?? ELO_INIT;
     const norms = {};
@@ -588,17 +585,28 @@ function calcRatings(raw, section) {
       weighted += norm * (WEIGHTS[m]/100);
     }
     const c = calcCred(d['半荘']??0, median);
-    const final = c*weighted + (1-c)*50;
-    const entry = {name, ...d, elo, norms, weighted, cred:c, final};
-    ((d['半荘']??0) >= minHanso ? ranked : unranked).push(entry);
+    const final = c*weighted + (1-c)*50;      // 補正あり
+    const finalRaw = weighted;                  // 補正なし（信頼度100%）
+    return {name, ...d, elo, norms, weighted, cred:c, final, finalRaw};
+  }
+
+  const ranked = [], unranked = [];
+  names.forEach(name => {
+    const d = raw[name][section];
+    const hanso = d['半荘'] ?? 0;
+    const days  = d['参加日数'] ?? 0;
+    const entry = calcEntry(name);
+    // 固定除外条件：参加日数3日以上 かつ 半荘10回以上
+    (days >= MIN_DAYS && hanso >= MIN_HANSO_FIXED ? ranked : unranked).push(entry);
   });
-  return {ranked, unranked, minHanso};
+  return {ranked, unranked};
+}
 }
 
 // ════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════
-let RAW={}, YEARS=[], GAMES=[], RANKED=[], UNRANKED=[], MIN_HANSO=4;
+let RAW={}, YEARS=[], GAMES=[], RANKED=[], UNRANKED=[];
 let CUR_RANK_SEC='', CUR_CMP_SEC='', CUR_SORT='final';
 let SEL_PLAYERS=[], CMP_CHARTS={};
 
@@ -669,7 +677,7 @@ function buildPeriodBtns(containerId, activeSec, type) {
 function applyRankSection(sec) {
   CUR_RANK_SEC = sec;
   const r = calcRatings(RAW, sec);
-  RANKED=r.ranked; UNRANKED=r.unranked; MIN_HANSO=r.minHanso;
+  RANKED=r.ranked; UNRANKED=r.unranked;
   renderRanking();
   document.querySelectorAll('[data-type="rank"].period-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.section===sec)
@@ -799,19 +807,66 @@ function renderRanking() {
 
   if (UNRANKED.length) {
     const div=document.createElement('div');
-    div.style.cssText='margin:20px 0 10px;display:flex;align-items:center;gap:12px;';
+    div.style.cssText='margin:28px 0 12px;display:flex;align-items:center;gap:12px;';
     div.innerHTML=`<div style="flex:1;height:1px;background:var(--border)"></div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--soft);letter-spacing:.15em;white-space:nowrap">参加数不足（${MIN_HANSO}局未満）— ランキング対象外</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--soft);letter-spacing:.1em;white-space:nowrap">参加数不足（${MIN_DAYS}日以上・${MIN_HANSO_FIXED}局以上が条件）— ランキング対象外</div>
       <div style="flex:1;height:1px;background:var(--border)"></div>`;
     list.appendChild(div);
-    [...UNRANKED].sort((a,b)=>(b['半荘']??0)-(a['半荘']??0)).forEach(d=>{
+    [...UNRANKED].sort((a,b)=>b.finalRaw-a.finalRaw).forEach(d=>{
       const el=document.createElement('div');
-      el.style.cssText='display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;opacity:.6;margin-bottom:4px;';
-      el.innerHTML=`<div style="font-size:12px;color:var(--dim);width:30px;text-align:center">—</div>
-        <div style="font-weight:700;font-size:14px;flex:1">${d.name}</div>
-        <div style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">${d['半荘']}局</div>
-        <div style="font-size:11px;color:var(--soft)">平均 ${(d['Ave.Score']??0)>=0?'+':''}${(d['Ave.Score']??0).toFixed(1)}pt</div>
-        <div style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">データ不足</div>`;
+      el.style.cssText='background:var(--surface);border:1px dashed var(--border);border-radius:8px;opacity:.8;margin-bottom:6px;cursor:pointer;overflow:hidden;';
+      const metrics=[
+        {label:'Elo',    val:Math.round(d.elo),                          unit:'',  norm:d.norms['Elo']},
+        {label:'TOP率',  val:((d['TOP率']??0)*100).toFixed(1),           unit:'%', norm:d.norms['TOP率']},
+        {label:'4着回避',val:((d['4着回避率']??0)*100).toFixed(1),       unit:'%', norm:d.norms['4着回避率']},
+        {label:'Ave.Pt', val:(d['Ave.Score']??0).toFixed(1),             unit:'pt',norm:d.norms['Ave.Score']},
+        {label:'Total',  val:d['Total Score']??0,                        unit:'pt',norm:d.norms['TotalScore']},
+        {label:'連対率', val:((d['連対率']??0)*100).toFixed(1),          unit:'%', norm:d.norms['連対率']},
+      ];
+      const metricsHtml=metrics.map(m=>`
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:52px;">
+          <div style="font-size:9px;color:var(--soft);font-family:'DM Mono',monospace">${m.label}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${m.val}<span style="font-size:9px;color:var(--soft)">${m.unit}</span></div>
+          <div style="width:38px;height:2px;background:var(--border);border-radius:2px;">
+            <div style="width:${Math.max(0,m.norm??0).toFixed(0)}%;height:100%;background:var(--gold);border-radius:2px;opacity:.5;"></div>
+          </div>
+        </div>`).join('');
+      const detailStats=[
+        {name:'Elo rating', val:Math.round(d.elo),                        unit:'',  norm:d.norms['Elo']},
+        {name:'TOP率',      val:((d['TOP率']??0)*100).toFixed(1),         unit:'%', norm:d.norms['TOP率']},
+        {name:'4着回避率',  val:((d['4着回避率']??0)*100).toFixed(1),     unit:'%', norm:d.norms['4着回避率']},
+        {name:'Ave.Score',  val:(d['Ave.Score']??0).toFixed(2),           unit:'pt',norm:d.norms['Ave.Score']},
+        {name:'TotalScore', val:d['Total Score']??0,                      unit:'pt',norm:d.norms['TotalScore']},
+        {name:'連対率',     val:((d['連対率']??0)*100).toFixed(1),        unit:'%', norm:d.norms['連対率']},
+        {name:'参加日数',   val:d['参加日数']??0,                         unit:'日',norm:null},
+        {name:'半荘数',     val:d['半荘']??0,                             unit:'局',norm:null},
+        {name:'役満',       val:d['役満']??0,                             unit:'回',norm:null},
+      ];
+      el.innerHTML=`
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;flex-wrap:wrap;">
+          <div style="font-size:12px;color:var(--dim);width:24px;text-align:center;flex-shrink:0">—</div>
+          <div style="font-weight:700;font-size:14px;min-width:68px;flex-shrink:0">${d.name}</div>
+          <div style="font-size:10px;color:var(--soft);font-family:'DM Mono',monospace;flex-shrink:0">${d['参加日数']??0}日/${d['半荘']??0}局</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;justify-content:flex-end;">${metricsHtml}</div>
+          <div style="text-align:right;flex-shrink:0;margin-left:8px;">
+            <div style="font-family:'Black Han Sans',sans-serif;font-size:22px;color:var(--soft)">${d.finalRaw.toFixed(1)}</div>
+            <div style="font-size:9px;color:var(--dim);font-family:'DM Mono',monospace;">参考スコア</div>
+          </div>
+        </div>
+        <div class="unranked-detail" style="display:none;padding:12px 48px;background:var(--card);border-top:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--gold);font-family:'DM Mono',monospace;margin-bottom:10px;letter-spacing:.15em;">参考値（参加数不足・補正なし）</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;">
+            ${detailStats.map(s=>`<div class="detail-stat">
+              <div class="detail-stat-name">${s.name}</div>
+              <div class="detail-stat-val">${s.val}<span class="detail-stat-unit">${s.unit}</span></div>
+              ${s.norm!=null?`<div class="detail-bar"><div class="detail-bar-fill" style="width:${Math.max(0,s.norm).toFixed(0)}%"></div></div><div class="detail-stat-norm">${s.norm.toFixed(0)}/100</div>`:''}
+            </div>`).join('')}
+          </div>
+        </div>`;
+      el.addEventListener('click',()=>{
+        const det=el.querySelector('.unranked-detail');
+        det.style.display = det.style.display==='none' ? 'grid' : 'none';
+      });
       list.appendChild(el);
     });
   }
