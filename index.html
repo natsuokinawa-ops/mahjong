@@ -2,12 +2,14 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="麻雀部">
 <meta name="theme-color" content="#05050a">
+<link rel="manifest" id="pwaManifest">
+<link rel="apple-touch-icon" id="appleIcon">
 <title>北向きさん麻雀部 — ダッシュボード</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&family=Black+Han+Sans&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1116,6 +1118,127 @@ function exportShared() {
     btn.disabled=false; btn.textContent='⚠ エラー'; console.error(err);
   }
 }
+</script>
+<script>
+// ════════════════════════════════════════════════
+// PWA SETUP
+// ════════════════════════════════════════════════
+(function() {
+  // ── アイコン生成（Canvas）──
+  function makeIcon(size) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    // 背景
+    ctx.fillStyle = '#05050a';
+    ctx.fillRect(0, 0, size, size);
+    // 丸角
+    ctx.globalCompositeOperation = 'destination-in';
+    const r = size * 0.22;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(size-r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size-r);
+    ctx.quadraticCurveTo(size, size, size-r, size);
+    ctx.lineTo(r, size);
+    ctx.quadraticCurveTo(0, size, 0, size-r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    // 背景再描画（丸角適用後）
+    ctx.fillStyle = '#05050a';
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(size-r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size-r);
+    ctx.quadraticCurveTo(size, size, size-r, size);
+    ctx.lineTo(r, size);
+    ctx.quadraticCurveTo(0, size, 0, size-r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fill();
+    // ゴールドの円
+    const cx = size/2, cy = size*0.44, rad = size*0.28;
+    const grad = ctx.createRadialGradient(cx, cy-rad*0.2, rad*0.1, cx, cy, rad);
+    grad.addColorStop(0, '#ffe566');
+    grad.addColorStop(1, '#c8960a');
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // 麻雀牌の線模様
+    ctx.strokeStyle = '#05050a';
+    ctx.lineWidth = size * 0.028;
+    ctx.beginPath();
+    ctx.moveTo(cx - rad*0.45, cy - rad*0.15);
+    ctx.lineTo(cx + rad*0.45, cy - rad*0.15);
+    ctx.moveTo(cx - rad*0.45, cy + rad*0.25);
+    ctx.lineTo(cx + rad*0.45, cy + rad*0.25);
+    ctx.stroke();
+    // テキスト「麻」
+    ctx.fillStyle = '#05050a';
+    ctx.font = `bold ${size*0.22}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('麻', cx, cy+rad*0.04);
+    // 下部テキスト
+    ctx.fillStyle = '#f5c842';
+    ctx.font = `bold ${size*0.11}px sans-serif`;
+    ctx.fillText('RANKING', cx, size*0.82);
+    return c.toDataURL('image/png');
+  }
+
+  const icon192 = makeIcon(192);
+  const icon512 = makeIcon(512);
+
+  // Apple Touch Icon
+  document.getElementById('appleIcon').href = icon192;
+
+  // ── マニフェスト生成 ──
+  const manifest = {
+    name: '北向きさん麻雀部ダッシュボード',
+    short_name: '麻雀部',
+    description: '麻雀成績管理・Eloレーティングダッシュボード',
+    start_url: './',
+    display: 'standalone',
+    background_color: '#05050a',
+    theme_color: '#05050a',
+    orientation: 'portrait-primary',
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+  document.getElementById('pwaManifest').href = URL.createObjectURL(blob);
+
+  // ── Service Worker登録 ──
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+const CACHE = 'mahjong-v1';
+const URLS = [self.location.href.replace('/sw.js','/')];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});`;
+    const swBlob = new Blob([swCode], {type:'text/javascript'});
+    const swUrl = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swUrl, {scope:'./'})
+      .catch(()=>{});
+  }
+})();
 </script>
 </body>
 </html>
