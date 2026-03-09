@@ -275,8 +275,8 @@ h1 em{color:var(--gold);font-style:normal;}
         </div>
         <input type="file" id="fileInput" accept=".xlsx,.xls">
       </div>
-      <button class="export-btn" id="exportBtn" style="display:none" onclick="exportShared()">
-        📤 共有用HTMLを保存
+      <button class="export-btn" id="exportBtn" style="display:none" onclick="publishToGitHub()">
+        🚀 GitHubに公開
       </button>
     </div>
   </header>
@@ -1341,21 +1341,40 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 });
 
 // ════════════════════════════════════════════════
-// EXPORT
+// GITHUB PUBLISH
 // ════════════════════════════════════════════════
-function exportShared() {
-  const btn = document.getElementById('exportBtn');
-  btn.disabled = true; btn.textContent = '⏳ 生成中...';
+
+const GH_TOKEN_KEY = 'mahjong_gh_token';
+const GH_REPO_KEY  = 'mahjong_gh_repo';   // 例: username/reponame
+const GH_PATH_KEY  = 'mahjong_gh_path';   // 例: index.html
+
+function getGHConfig() {
   try {
-    const lastDate = document.getElementById('dataDateLabel').textContent.replace('📅 最終実施日：','');
-    const dataJson = JSON.stringify({players:RAW, years:YEARS, lastDate, weights:WEIGHTS, games:GAMES});
-    const src = document.documentElement.outerHTML;
-    const viewerHtml = src
-      .replace('id="uploadZone"','id="uploadZone" style="display:none"')
-      .replace('id="noDataMsg"','id="noDataMsg" style="display:none"')
-      .replace('id="mainApp" style="display:none"','id="mainApp" style="display:block"')
-      .replace('id="exportBtn"','id="exportBtn" style="display:none"')
-      .replace('</body>',`
+    return {
+      token: localStorage.getItem(GH_TOKEN_KEY) || '',
+      repo:  localStorage.getItem(GH_REPO_KEY)  || '',
+      path:  localStorage.getItem(GH_PATH_KEY)  || 'index.html',
+    };
+  } catch { return {token:'',repo:'',path:'index.html'}; }
+}
+function saveGHConfig(token, repo, path) {
+  try {
+    localStorage.setItem(GH_TOKEN_KEY, token);
+    localStorage.setItem(GH_REPO_KEY,  repo);
+    localStorage.setItem(GH_PATH_KEY,  path);
+  } catch {}
+}
+
+function buildViewerHTML() {
+  const lastDate = document.getElementById('dataDateLabel').textContent.replace('📅 最終実施日：','');
+  const dataJson = JSON.stringify({players:RAW, years:YEARS, lastDate, weights:WEIGHTS, games:GAMES});
+  const src = document.documentElement.outerHTML;
+  return src
+    .replace('id="uploadZone"','id="uploadZone" style="display:none"')
+    .replace('id="noDataMsg"','id="noDataMsg" style="display:none"')
+    .replace('id="mainApp" style="display:none"','id="mainApp" style="display:block"')
+    .replace('id="exportBtn"','id="exportBtn" style="display:none"')
+    .replace('</body>',`
 <script>
 (function(){
   const _d=${dataJson};
@@ -1367,7 +1386,7 @@ function exportShared() {
   buildPeriodBtns('rankPeriodSelector',defSec,'rank');
   buildPeriodBtns('cmpPeriodSelector',defSec,'cmp');
   applyRankSection(defSec); applyCmpSection(defSec);
-  buildWeightGrid(); renderPresets(); updateSummary();
+  buildWeightGrid(); updateSummary();
   if(_d.lastDate){const lbl=document.getElementById('dataDateLabel');lbl.textContent='📅 最終実施日：'+_d.lastDate;lbl.style.display='block';}
   const notice=document.createElement('div');
   notice.style.cssText='text-align:center;padding:8px 16px;background:rgba(245,200,66,.08);border-bottom:1px solid rgba(245,200,66,.2);font-size:11px;color:var(--gold);font-family:"DM Mono",monospace;';
@@ -1375,19 +1394,152 @@ function exportShared() {
   document.body.insertAdjacentElement('afterbegin',notice);
 })();
 <\/script></body>`);
-    const blob=new Blob([viewerHtml],{type:'text/html;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url; a.download=`麻雀ダッシュボード_${lastDate||'共有'}.html`; a.click();
-    URL.revokeObjectURL(url);
-    btn.textContent='✓ 保存しました';
-    setTimeout(()=>{btn.disabled=false;btn.textContent='📤 共有用HTMLを保存';},2500);
+}
+
+async function publishToGitHub() {
+  const btn = document.getElementById('exportBtn');
+  const cfg = getGHConfig();
+
+  // ── 設定未入力の場合はダイアログで入力 ──
+  if (!cfg.token || !cfg.repo) {
+    showGHSettingsModal(cfg);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '⏳ アップロード中...';
+
+  try {
+    const html = buildViewerHTML();
+    const encoded = btoa(unescape(encodeURIComponent(html)));
+
+    // 現在のSHAを取得（ファイルが既存の場合に必要）
+    const apiBase = `https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}`;
+    let sha = null;
+    try {
+      const res = await fetch(apiBase, {
+        headers: {
+          'Authorization': `token ${cfg.token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        sha = data.sha;
+      }
+    } catch {}
+
+    // ファイルをPUT（新規 or 上書き）
+    const lastDate = document.getElementById('dataDateLabel').textContent.replace('📅 最終実施日：','');
+    const body = {
+      message: `📊 データ更新 ${lastDate}`,
+      content: encoded,
+      ...(sha ? {sha} : {})
+    };
+
+    const putRes = await fetch(apiBase, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${cfg.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!putRes.ok) {
+      const err = await putRes.json();
+      throw new Error(err.message || putRes.status);
+    }
+
+    btn.innerHTML = '✅ 公開完了!';
+    setTimeout(() => { btn.disabled = false; btn.innerHTML = '🚀 GitHubに公開'; }, 3000);
+
   } catch(err) {
-    btn.disabled=false; btn.textContent='⚠ エラー'; console.error(err);
+    console.error(err);
+    if (err.message && err.message.includes('Bad credentials')) {
+      alert('トークンが無効です。設定を確認してください。');
+      showGHSettingsModal(getGHConfig());
+    } else {
+      alert('エラー: ' + err.message);
+    }
+    btn.disabled = false;
+    btn.innerHTML = '🚀 GitHubに公開';
   }
 }
-</script>
-<script>
+
+// ── GitHub設定モーダル ──
+function showGHSettingsModal(cfg) {
+  // 既存モーダルを削除
+  const existing = document.getElementById('ghModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'ghModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;
+    display:flex;align-items:center;justify-content:center;padding:16px;`;
+  modal.innerHTML = `
+    <div style="background:#1a1a2e;border:1px solid rgba(245,200,66,.3);border-radius:12px;padding:24px;max-width:420px;width:100%;">
+      <h3 style="color:var(--gold);font-size:15px;margin:0 0 6px;">⚙️ GitHub公開設定</h3>
+      <p style="color:var(--soft);font-size:11px;margin:0 0 18px;line-height:1.6;">
+        初回のみ設定してください。設定はブラウザに保存されます。
+      </p>
+
+      <label style="display:block;margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--soft);margin-bottom:4px;">Personal Access Token（repo権限）</div>
+        <input id="ghTokenInput" type="password" value="${cfg.token}"
+          placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);
+                 border-radius:4px;color:var(--text);font-size:12px;padding:8px 10px;font-family:'DM Mono',monospace;">
+      </label>
+
+      <label style="display:block;margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--soft);margin-bottom:4px;">リポジトリ（ユーザー名/リポジトリ名）</div>
+        <input id="ghRepoInput" type="text" value="${cfg.repo}"
+          placeholder="例: natsuokinawa-ops/mahjong"
+          style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);
+                 border-radius:4px;color:var(--text);font-size:12px;padding:8px 10px;font-family:'DM Mono',monospace;">
+      </label>
+
+      <label style="display:block;margin-bottom:20px;">
+        <div style="font-size:11px;color:var(--soft);margin-bottom:4px;">ファイルパス（通常はindex.htmlのまま）</div>
+        <input id="ghPathInput" type="text" value="${cfg.path || 'index.html'}"
+          placeholder="index.html"
+          style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);
+                 border-radius:4px;color:var(--text);font-size:12px;padding:8px 10px;font-family:'DM Mono',monospace;">
+      </label>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="document.getElementById('ghModal').remove()"
+          style="padding:8px 16px;border-radius:4px;border:1px solid var(--border);
+                 background:transparent;color:var(--soft);cursor:pointer;font-size:12px;">
+          キャンセル
+        </button>
+        <button onclick="saveGHSettings()"
+          style="padding:8px 20px;border-radius:4px;border:1px solid var(--gold);
+                 background:var(--gold);color:#000;cursor:pointer;font-size:12px;font-weight:700;">
+          保存して公開
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // モーダル外クリックで閉じる
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+function saveGHSettings() {
+  const token = document.getElementById('ghTokenInput').value.trim();
+  const repo  = document.getElementById('ghRepoInput').value.trim();
+  const path  = document.getElementById('ghPathInput').value.trim() || 'index.html';
+  if (!token) { alert('トークンを入力してください'); return; }
+  if (!repo || !repo.includes('/')) { alert('リポジトリは「ユーザー名/リポジトリ名」形式で入力してください'); return; }
+  saveGHConfig(token, repo, path);
+  document.getElementById('ghModal').remove();
+  publishToGitHub();
+}
+
+
 // ════════════════════════════════════════════════
 // PWA SETUP
 // ════════════════════════════════════════════════
