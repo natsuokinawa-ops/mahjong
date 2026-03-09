@@ -1419,83 +1419,77 @@ async function uploadFile(cfg, filePath, contentStr, commitMsg) {
 }
 
 async function publishToGitHub() {
-  const btn = document.getElementById('exportBtn');
-  const cfg = getGHConfig();
+  var btn = document.getElementById('exportBtn');
+  var cfg = getGHConfig();
   if (!cfg.token || !cfg.repo) { showGHSettingsModal(cfg); return; }
 
   btn.disabled = true;
   btn.innerHTML = '⏳ GitHub取得中...';
 
   try {
-    const lastDate = document.getElementById('dataDateLabel')
+    var lastDate = document.getElementById('dataDateLabel')
       .textContent.replace('📅 最終実施日：','').trim();
 
-    // ── GitHubから現在のindex.htmlを取得（outerHTMLは使わない）──
-    const apiHeaders = {
-      'Authorization': `token ${cfg.token}`,
-      'Accept': 'application/vnd.github.v3+json'
-    };
-    const apiUrl = `https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}`;
-    const ghRes = await fetch(apiUrl, {headers: apiHeaders});
+    // GitHubから現在のindex.htmlを取得
+    var ghRes = await fetch(
+      'https://api.github.com/repos/' + cfg.repo + '/contents/' + cfg.path,
+      { headers: {
+          'Authorization': 'token ' + cfg.token,
+          'Accept': 'application/vnd.github.v3+json'
+      }}
+    );
     if (!ghRes.ok) {
-      const e = await ghRes.json();
-      throw new Error('GitHub取得失敗: ' + (e.message || ghRes.status));
+      var errData = await ghRes.json();
+      throw new Error('GitHub取得失敗: ' + (errData.message || ghRes.status));
     }
-    const ghData = await ghRes.json();
-    // base64デコード（GitHub APIはbase64で返す）
-    let baseHtml = decodeURIComponent(escape(atob(ghData.content.replace(/\n/g, ''))));
+    var ghData = await ghRes.json();
+    var baseHtml = decodeURIComponent(escape(atob(ghData.content.replace(/\n/g, ''))));
 
-    // 前回埋め込んだローダースクリプトを除去（重複防止）
-    baseHtml = baseHtml.replace(/<script>\s*\(function\(\)\{[\s\S]*?var _d=JSON\.parse[\s\S]*?<\/script>\s*(?=<\/body>)/g, '');
+    // 前回のローダーを除去
+    baseHtml = baseHtml.replace(/<script>\(function\(\)\{var _d=[\s\S]*?<\/script>\n<\/body>/, '</body>');
 
-    // ── データを直接埋め込む ──
+    // データをBase64エンコード（特殊文字を安全に埋め込む）
     btn.innerHTML = '⏳ アップロード中...';
-    // Base64エンコードで安全に埋め込む（特殊文字・</script>対策）
-    const dataJson = JSON.stringify({players:RAW, years:YEARS, games:GAMES, weights:WEIGHTS, lastDate});
-    const dataB64 = btoa(unescape(encodeURIComponent(dataJson)));
+    var dataB64 = btoa(unescape(encodeURIComponent(
+      JSON.stringify({players:RAW, years:YEARS, games:GAMES, weights:WEIGHTS, lastDate:lastDate})
+    )));
 
-    const embedScript = `<script>
-(function(){
-  var _d=JSON.parse(decodeURIComponent(escape(atob('${dataB64}'))));
-  window.RAW=_d.players||{};
-  window.YEARS=_d.years||[];
-  window.GAMES=_d.games||[];
-  if(_d.weights) window.WEIGHTS=_d.weights;
-  function _init(){
-    ELO_RATINGS=calcElo(GAMES);
-    buildGMM(RAW);
-    var sec=YEARS.length?YEARS[0]:'TOTAL';
-    CUR_RANK_SEC=sec; CUR_CMP_SEC=sec; CUR_SORT='final';
-    buildPeriodBtns('rankPeriodSelector',sec,'rank');
-    buildPeriodBtns('cmpPeriodSelector',sec,'cmp');
-    applyRankSection(sec); applyCmpSection(sec);
-    buildWeightGrid(); updateSummary();
-    if(_d.lastDate){
-      var l=document.getElementById('dataDateLabel');
-      if(l){l.textContent='\u{1F4C5}\u6700\u7D42\u5B9F\u65BD\u65E5\uFF1A'+_d.lastDate;l.style.display='block';}
-    }
-    var bar=document.createElement('div');
-    bar.style.cssText='text-align:center;padding:6px;background:rgba(66,232,160,.1);border-bottom:1px solid rgba(66,232,160,.25);font-size:11px;color:#42e8a0;font-family:monospace;';
-    bar.textContent='\u2705 \u6700\u65B0\u30C7\u30FC\u30BF ('+ (_d.lastDate||'') +')';
-    document.body.insertAdjacentElement('afterbegin',bar);
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',_init);
-  else setTimeout(_init,50);
-})();
-<\/script>`;
+    // ローダースクリプトを文字列で組み立て（テンプレートリテラル禁止）
+    var sc = '<scr'+'ipt>(function(){';
+    sc += 'var _d=JSON.parse(decodeURIComponent(escape(atob("' + dataB64 + '"))));';
+    sc += 'window.RAW=_d.players||{};';
+    sc += 'window.YEARS=_d.years||[];';
+    sc += 'window.GAMES=_d.games||[];';
+    sc += 'if(_d.weights)window.WEIGHTS=_d.weights;';
+    sc += 'function _i(){';
+    sc += 'ELO_RATINGS=calcElo(GAMES);buildGMM(RAW);';
+    sc += 'var s=YEARS.length?YEARS[0]:"TOTAL";';
+    sc += 'CUR_RANK_SEC=s;CUR_CMP_SEC=s;CUR_SORT="final";';
+    sc += 'buildPeriodBtns("rankPeriodSelector",s,"rank");';
+    sc += 'buildPeriodBtns("cmpPeriodSelector",s,"cmp");';
+    sc += 'applyRankSection(s);applyCmpSection(s);';
+    sc += 'buildWeightGrid();updateSummary();';
+    sc += 'if(_d.lastDate){var l=document.getElementById("dataDateLabel");';
+    sc += 'if(l){l.textContent="\u{1F4C5}\u6700\u7D42\u5B9F\u65BD\u65E5\uFF1A"+_d.lastDate;l.style.display="block";}}';
+    sc += 'var b=document.createElement("div");';
+    sc += 'b.style.cssText="text-align:center;padding:6px;background:rgba(66,232,160,.1);border-bottom:1px solid rgba(66,232,160,.25);font-size:11px;color:#42e8a0;font-family:monospace;";';
+    sc += 'b.textContent="\u2705 \u6700\u65B0\u30C7\u30FC\u30BF ("+(_d.lastDate||"")+")";';
+    sc += 'document.body.insertAdjacentElement("afterbegin",b);}';
+    sc += 'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",_i);';
+    sc += 'else setTimeout(_i,50);';
+    sc += '})();</'+'script>';
 
-    // uploadZone/noDataMsgを非表示、mainAppを表示（初回・2回目以降両対応）
-    let viewerHtml = baseHtml
-      .replace(/id="uploadZone"[^>]*>/g,  'id="uploadZone" style="display:none">')
-      .replace(/id="noDataMsg"[^>]*>/g,   'id="noDataMsg" style="display:none">')
-      .replace(/id="mainApp"[^>]*>/g,     'id="mainApp" style="display:block">')
-      .replace(/id="exportBtn"[^>]*>/g,   'id="exportBtn" style="display:none">')
-      .replace('</body>', embedScript + '\n</body>');
+    var viewerHtml = baseHtml
+      .replace(/id="uploadZone"[^>]*>/g, 'id="uploadZone" style="display:none">')
+      .replace(/id="noDataMsg"[^>]*>/g,  'id="noDataMsg" style="display:none">')
+      .replace(/id="mainApp"[^>]*>/g,    'id="mainApp" style="display:block">')
+      .replace(/id="exportBtn"[^>]*>/g,  'id="exportBtn" style="display:none">')
+      .replace('</body>', sc + '\n</body>');
 
-    await uploadFile(cfg, cfg.path, viewerHtml, `📊 データ更新 ${lastDate}`);
+    await uploadFile(cfg, cfg.path, viewerHtml, '\uD83D\uDCCA \u30C7\u30FC\u30BF\u66F4\u65B0 ' + lastDate);
 
     btn.innerHTML = '✅ 公開完了!';
-    setTimeout(() => { btn.disabled=false; btn.innerHTML='🚀 GitHubに公開'; }, 3000);
+    setTimeout(function(){ btn.disabled=false; btn.innerHTML='🚀 GitHubに公開'; }, 3000);
 
   } catch(err) {
     console.error(err);
@@ -1510,7 +1504,7 @@ async function publishToGitHub() {
   }
 }
 
-// ── GitHub設定モーダル ──
+
 function showGHSettingsModal(cfg) {
   // 既存モーダルを削除
   const existing = document.getElementById('ghModal');
