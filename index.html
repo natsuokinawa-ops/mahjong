@@ -759,29 +759,21 @@ function applyCmpSection(sec) {
   );
 }
 
-// 期間・ソートボタン イベント委譲（スマホtouchend対応）
-function handleBtnEvent(e) {
+// 期間・ソートボタン イベント委譲
+document.addEventListener('click', e => {
   const pb = e.target.closest('.period-btn');
   if (pb) {
-    e.preventDefault();
     if (pb.dataset.type === 'rank') applyRankSection(pb.dataset.section);
     else if (pb.dataset.type === 'cmp') applyCmpSection(pb.dataset.section);
     return;
   }
   const sb = e.target.closest('.sort-btn');
   if (sb) {
-    e.preventDefault();
     CUR_SORT = sb.dataset.sort;
     document.querySelectorAll('.sort-btn').forEach(b=>b.classList.toggle('active', b===sb));
     renderRanking();
   }
-}
-document.addEventListener('click', handleBtnEvent);
-document.addEventListener('touchend', e => {
-  if (e.target.closest('.period-btn') || e.target.closest('.sort-btn')) {
-    handleBtnEvent(e);
-  }
-}, {passive: false});
+});
 
 // ════════════════════════════════════════════════
 // RANKING
@@ -1362,7 +1354,6 @@ function switchTab(id) {
 }
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
-  btn.addEventListener('touchend', e=>{e.preventDefault(); switchTab(btn.dataset.tab);}, {passive:false});
 });
 
 // ════════════════════════════════════════════════
@@ -1455,15 +1446,17 @@ async function publishToGitHub() {
     let baseHtml = decodeURIComponent(escape(atob(ghData.content.replace(/\n/g, ''))));
 
     // 前回埋め込んだローダースクリプトを除去（重複防止）
-    baseHtml = baseHtml.replace(/<script>\s*\(function\(\)\{\s*var _d=\{[\s\S]*?<\/script>\s*(?=<\/body>)/g, '');
+    baseHtml = baseHtml.replace(/<script>\s*\(function\(\)\{[\s\S]*?var _d=JSON\.parse[\s\S]*?<\/script>\s*(?=<\/body>)/g, '');
 
     // ── データを直接埋め込む ──
     btn.innerHTML = '⏳ アップロード中...';
+    // Base64エンコードで安全に埋め込む（特殊文字・</script>対策）
     const dataJson = JSON.stringify({players:RAW, years:YEARS, games:GAMES, weights:WEIGHTS, lastDate});
+    const dataB64 = btoa(unescape(encodeURIComponent(dataJson)));
 
     const embedScript = `<script>
 (function(){
-  var _d=${dataJson};
+  var _d=JSON.parse(decodeURIComponent(escape(atob('${dataB64}'))));
   window.RAW=_d.players||{};
   window.YEARS=_d.years||[];
   window.GAMES=_d.games||[];
