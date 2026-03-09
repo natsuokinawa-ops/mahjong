@@ -1424,15 +1424,33 @@ async function publishToGitHub() {
   if (!cfg.token || !cfg.repo) { showGHSettingsModal(cfg); return; }
 
   btn.disabled = true;
-  btn.innerHTML = '⏳ 生成中...';
+  btn.innerHTML = '⏳ GitHub取得中...';
 
   try {
     const lastDate = document.getElementById('dataDateLabel')
       .textContent.replace('📅 最終実施日：','').trim();
 
-    // exportSharedと同じ方式: outerHTMLにデータを埋め込む
+    // ── GitHubから現在のindex.htmlを取得（outerHTMLは使わない）──
+    const apiHeaders = {
+      'Authorization': `token ${cfg.token}`,
+      'Accept': 'application/vnd.github.v3+json'
+    };
+    const apiUrl = `https://api.github.com/repos/${cfg.repo}/contents/${cfg.path}`;
+    const ghRes = await fetch(apiUrl, {headers: apiHeaders});
+    if (!ghRes.ok) {
+      const e = await ghRes.json();
+      throw new Error('GitHub取得失敗: ' + (e.message || ghRes.status));
+    }
+    const ghData = await ghRes.json();
+    // base64デコード（GitHub APIはbase64で返す）
+    let baseHtml = decodeURIComponent(escape(atob(ghData.content.replace(/\n/g, ''))));
+
+    // 前回埋め込んだローダースクリプトを除去（重複防止）
+    baseHtml = baseHtml.replace(/<script>\s*\(function\(\)\{\s*var _d=\{[\s\S]*?<\/script>\s*(?=<\/body>)/g, '');
+
+    // ── データを直接埋め込む ──
+    btn.innerHTML = '⏳ アップロード中...';
     const dataJson = JSON.stringify({players:RAW, years:YEARS, games:GAMES, weights:WEIGHTS, lastDate});
-    const src = document.documentElement.outerHTML;
 
     const embedScript = `<script>
 (function(){
@@ -1464,15 +1482,14 @@ async function publishToGitHub() {
 })();
 <\/script>`;
 
-    const viewerHtml = src
+    const viewerHtml = baseHtml
       .replace('id="uploadZone"',  'id="uploadZone" style="display:none"')
       .replace('id="noDataMsg"',   'id="noDataMsg" style="display:none"')
       .replace('id="mainApp" style="display:none"', 'id="mainApp" style="display:block"')
       .replace('id="exportBtn"',   'id="exportBtn" style="display:none"')
       .replace('</body>', embedScript + '\n</body>');
 
-    btn.innerHTML = '⏳ アップロード中...';
-    await ghPut(cfg, cfg.path, viewerHtml, `📊 データ更新 ${lastDate}`);
+    await uploadFile(cfg, cfg.path, viewerHtml, `📊 データ更新 ${lastDate}`);
 
     btn.innerHTML = '✅ 公開完了!';
     setTimeout(() => { btn.disabled=false; btn.innerHTML='🚀 GitHubに公開'; }, 3000);
