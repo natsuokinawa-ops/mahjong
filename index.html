@@ -21,7 +21,7 @@
   --gold:#f5c842;--silver:#b0b8cc;--bronze:#d4845a;
   --text:#e2e2f0;--muted:#555570;--dim:#8888aa;--soft:#aaaacc;--green:#42e8a0;--red:#e84260;--blue:#4290e8;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
+*{box-sizing:border-box;margin:0;padding:0;}button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;min-height:100vh;}
 .bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
   background-image:linear-gradient(rgba(242,200,66,.02)1px,transparent 1px),linear-gradient(90deg,rgba(242,200,66,.02)1px,transparent 1px);
@@ -679,7 +679,6 @@ let SEL_PLAYERS=[], CMP_CHARTS={}, CMP_SHOW_UNRANKED=false;
 const zone   = document.getElementById('uploadZone');
 const finput = document.getElementById('fileInput');
 zone.addEventListener('click', ()=>finput.click());
-zone.addEventListener('touchend', e=>{ e.preventDefault(); finput.click(); }); // preventDefault でclick二重発火防止
 zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('drag-over');});
 zone.addEventListener('dragleave', ()=>zone.classList.remove('drag-over'));
 zone.addEventListener('drop', e=>{e.preventDefault();zone.classList.remove('drag-over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
@@ -759,9 +758,7 @@ function applyCmpSection(sec) {
 }
 
 // 期間・ソートボタン イベント委譲
-function handleBtnEvent(e) {
-  // touchendの場合はclickが後から来るので preventDefault で click をキャンセル
-  if (e.type === 'touchend') e.preventDefault();
+document.addEventListener('click', e => {
   const pb = e.target.closest('.period-btn');
   if (pb) {
     if (pb.dataset.type === 'rank') applyRankSection(pb.dataset.section);
@@ -774,9 +771,7 @@ function handleBtnEvent(e) {
     document.querySelectorAll('.sort-btn').forEach(b=>b.classList.toggle('active', b===sb));
     renderRanking();
   }
-}
-document.addEventListener('click', handleBtnEvent);
-document.addEventListener('touchend', handleBtnEvent, {passive:false});
+});
 
 // ════════════════════════════════════════════════
 // RANKING
@@ -870,17 +865,7 @@ function renderRanking() {
           ${s.norm!=null?`<div class="detail-bar"><div class="detail-bar-fill" style="width:${Math.max(0,s.norm).toFixed(0)}%"></div></div><div class="detail-stat-norm">${s.norm.toFixed(0)}/100</div>`:''}
         </div>`).join('')}
       </div>`;
-    el.addEventListener('click', e=>{
-      // touchendでpreventDefaultされた場合はclickは来ない
-      el.classList.toggle('expanded');
-    });
-    el.addEventListener('touchend', e=>{
-      if (Math.abs(e.changedTouches[0].clientY - (el._touchStartY||0)) < 8) {
-        e.preventDefault(); // clickキャンセル（二重発火防止）
-        el.classList.toggle('expanded');
-      }
-    });
-    el.addEventListener('touchstart', e=>{ el._touchStartY = e.touches[0].clientY; }, {passive:true});
+    el.addEventListener('click', ()=>el.classList.toggle('expanded'));
     list.appendChild(el);
   });
 
@@ -1353,14 +1338,7 @@ function switchTab(id) {
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));
 }
 document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click', e=>{
-    // touchendのpreventDefaultによりclickはスマホでは来ないが念のため
-    switchTab(btn.dataset.tab);
-  });
-  btn.addEventListener('touchend', e=>{
-    e.preventDefault(); // これによりclickイベントをキャンセル（二重発火防止）
-    switchTab(btn.dataset.tab);
-  });
+  btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
 });
 
 // ════════════════════════════════════════════════
