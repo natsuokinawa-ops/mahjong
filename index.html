@@ -282,13 +282,13 @@ h1 em{color:var(--gold);font-style:normal;}
 
   <div id="mainApp" style="display: block;">
     <div class="tabs">
-      <button class="tab-btn active" data-tab="ranking">🏆 総合ランキング</button>
-      <button class="tab-btn" data-tab="compare">📊 プレイヤー比較</button>
+      <button class="tab-btn" data-tab="ranking">🏆 総合ランキング</button>
+      <button class="tab-btn active" data-tab="compare">📊 プレイヤー比較</button>
       <button class="tab-btn" data-tab="settings">⚙️ スコア算出設定</button>
     </div>
 
     <!-- ═══ RANKING TAB ═══ -->
-    <div class="tab-pane active" id="tab-ranking">
+    <div class="tab-pane" id="tab-ranking">
       <div id="formulaSummary" class="settings-box" style="padding:14px 20px;margin-bottom:24px;">
         <div style="display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12px;align-items:center;">
           <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:.2em;margin-right:4px;">WEIGHTS</span>
@@ -1247,7 +1247,7 @@ h1 em{color:var(--gold);font-style:normal;}
     </div>
 
     <!-- ═══ COMPARE TAB ═══ -->
-    <div class="tab-pane" id="tab-compare">
+    <div class="tab-pane active" id="tab-compare">
       <div style="margin-bottom:20px">
         <div class="section-label">対象期間</div>
         <div class="controls" id="cmpPeriodSelector"><button class="period-btn" data-section="TOTAL" data-type="cmp">全期間</button><button class="period-btn active" data-section="2026" data-type="cmp">2026年</button><button class="period-btn" data-section="2025" data-type="cmp">2025年</button><button class="period-btn" data-section="2024" data-type="cmp">2024年</button><button class="period-btn" data-section="2023" data-type="cmp">2023年</button></div>
