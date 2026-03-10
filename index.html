@@ -405,7 +405,135 @@ h1 em{color:var(--gold);font-style:normal;}
           <span class="total-val" id="weightTotal">100%</span>
           <span class="total-warn" id="weightWarn" style="display:none">⚠ 合計が100%になるよう調整してください</span>
         </div>
+      </div>
 
+      <!-- スコア算出方法の説明 -->
+      <div class="settings-box" style="margin-top:16px;border-top:2px solid var(--gold);padding-top:20px;">
+        <h3 style="margin-bottom:4px;font-size:15px;letter-spacing:.05em;">📐 スコア算出方法</h3>
+        <p style="font-size:11px;color:var(--dim);margin-bottom:20px;">最終スコアは以下の3ステップで算出されます。</p>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- STEP1 -->
+          <div style="background:var(--surface);border-radius:10px;padding:16px;border-left:3px solid var(--gold);">
+            <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.08em;margin-bottom:6px;">STEP 1 ／ 各指標を 0〜100 に正規化</div>
+            <p style="font-size:12px;color:var(--soft);line-height:1.8;margin-bottom:10px;">
+              選択した対象期間に参加した全プレイヤーの最小値・最大値を基準に線形変換します。全指標が同じ基準で比較されます。
+            </p>
+            <div style="background:var(--card);border-radius:6px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);line-height:1.9;">
+              正規化値 = (値 − 期間内最小値) ÷ (期間内最大値 − 期間内最小値) × 100
+            </div>
+            <p style="font-size:11px;color:var(--soft);margin-top:10px;line-height:1.7;">
+              全指標とも「対象期間の参加者のmin〜max」を基準とします。期間を切り替えると基準も変わるため、同じ値でも正規化後のスコアが変わります。
+            </p>
+            <p style="font-size:11px;color:var(--gold);font-weight:700;margin-top:12px;margin-bottom:6px;">具体例（2026年・TOP率・6人）</p>
+            <table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:10px;">
+              <tr style="color:var(--gold);border-bottom:1px solid var(--border);">
+                <th style="text-align:left;padding:4px 8px;">プレイヤー</th>
+                <th style="text-align:left;padding:4px 8px;">TOP率</th>
+                <th style="text-align:left;padding:4px 8px;">正規化値</th>
+              </tr>
+              <tr style="color:var(--soft);border-bottom:1px solid var(--border);"><td style="padding:4px 8px;">Aさん</td><td style="padding:4px 8px;">40%（最高）</td><td style="padding:4px 8px;">100点</td></tr>
+              <tr style="color:var(--soft);border-bottom:1px solid var(--border);"><td style="padding:4px 8px;">Bさん</td><td style="padding:4px 8px;">32%</td><td style="padding:4px 8px;">77.1点</td></tr>
+              <tr style="color:var(--soft);border-bottom:1px solid var(--border);"><td style="padding:4px 8px;">Cさん</td><td style="padding:4px 8px;">25%</td><td style="padding:4px 8px;">57.1点</td></tr>
+              <tr style="color:var(--soft);border-bottom:1px solid var(--border);"><td style="padding:4px 8px;">Dさん</td><td style="padding:4px 8px;">18%</td><td style="padding:4px 8px;">37.1点</td></tr>
+              <tr style="color:var(--soft);border-bottom:1px solid var(--border);"><td style="padding:4px 8px;">Eさん</td><td style="padding:4px 8px;">12%</td><td style="padding:4px 8px;">20.0点</td></tr>
+              <tr style="color:var(--soft);"><td style="padding:4px 8px;">Fさん</td><td style="padding:4px 8px;">5%（最低）</td><td style="padding:4px 8px;">0点</td></tr>
+            </table>
+            <p style="font-size:11px;color:var(--dim);line-height:1.7;">最小値5%・最大値40%を基準に計算。</p>
+            <p style="font-size:11px;color:var(--gold);font-weight:700;margin-top:12px;margin-bottom:4px;">注意点</p>
+            <ul style="font-size:11px;color:var(--soft);line-height:1.9;padding-left:16px;">
+              <li>最下位のプレイヤーは常に0点、最上位は常に100点になります</li>
+              <li>期間を切り替えると基準が変わるため、同じ値でも正規化後のスコアが変わります</li>
+              <li>プレイヤーが増減すると他のプレイヤーのスコアも変わることがあります</li>
+            </ul>
+          </div>
+
+          <!-- STEP2 -->
+          <div style="background:var(--surface);border-radius:10px;padding:16px;border-left:3px solid var(--gold);">
+            <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.08em;margin-bottom:6px;">STEP 2 ／ 重み付きスコアを計算</div>
+            <p style="font-size:12px;color:var(--soft);line-height:1.8;margin-bottom:10px;">
+              各指標の正規化値に上の重み設定を掛けて合算します。
+            </p>
+            <div style="background:var(--card);border-radius:6px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);line-height:1.9;">
+              重み付きスコア = Σ（正規化値 × 重み%）
+            </div>
+            <p style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.7;">
+              例）Elo=70点×30% + TOP率=60点×30% + 4着回避率=80点×20% + Ave.Score=50点×10% + TotalScore=40点×5% + 連対率=55点×5%<br>
+              = 21 + 18 + 16 + 5 + 2 + 2.75 = <span style="color:var(--gold);font-weight:700;">64.75点</span>
+            </p>
+          </div>
+
+          <!-- STEP3 -->
+          <div style="background:var(--surface);border-radius:10px;padding:16px;border-left:3px solid var(--gold);">
+            <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.08em;margin-bottom:6px;">STEP 3 ／ 信頼補正（試合数が少ない場合に平均へ引き寄せ）</div>
+            <p style="font-size:12px;color:var(--soft);line-height:1.8;margin-bottom:10px;">
+              半荘数が少ないプレイヤーは偶然に左右されやすいため、50点（平均）方向に補正します。半荘数が増えるほど補正は弱まります。
+            </p>
+            <div style="background:var(--card);border-radius:6px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);line-height:1.9;">
+              k　　　　 = max(5, 対象期間の中央値半荘数 × 0.5)<br>
+              信頼度　　= 半荘数 ÷ (半荘数 + k)<br>
+              最終スコア = 信頼度 × 重み付きスコア + (1 − 信頼度) × 50
+            </div>
+            <p style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.7;">
+              例）中央値20局 → k=10。半荘5局のプレイヤーは信頼度33%、重み付き64.75点なら<br>
+              最終スコア = 0.33×64.75 + 0.67×50 = <span style="color:var(--gold);font-weight:700;">54.9点</span>（平均寄りに補正）<br>
+              半荘30局のプレイヤーは信頼度75%、同じ64.75点なら<br>
+              最終スコア = 0.75×64.75 + 0.25×50 = <span style="color:var(--gold);font-weight:700;">60.6点</span>（ほぼそのまま）
+            </p>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+              <p style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px;">💡 最終スコアの上限について</p>
+              <p style="font-size:11px;color:var(--soft);line-height:1.7;margin-bottom:8px;">
+                全指標で1位のプレイヤーでも、信頼補正により最終スコアは100になりません。半荘数が増えるほど信頼度が1.0に近づき、100点に近づきますが100になることはありません。<br>
+                逆に全指標で最下位でも、信頼補正により0点にはならず50点方向に引き寄せられます。
+              </p>
+              <div style="background:var(--card);border-radius:6px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);line-height:1.9;">
+                例）半荘30局・中央値20局 → 信頼度75%<br>
+                全指標1位　　：0.75 × 100 + 0.25 × 50 = <span style="color:var(--gold);font-weight:700;">87.5点</span><br>
+                全指標最下位：0.75 × 0　 + 0.25 × 50 = <span style="color:var(--gold);font-weight:700;">12.5点</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Eloレーティング -->
+      <div class="settings-box" style="margin-top:16px;border-top:2px solid var(--blue);padding-top:20px;">
+        <h3 style="margin-bottom:4px;font-size:15px;letter-spacing:.05em;">📊 Eloレーティングの計算方法</h3>
+        <p style="font-size:11px;color:var(--dim);margin-bottom:16px;">チェスで使われるEloレーティングを麻雀向けに適用しています。</p>
+        <div style="background:var(--surface);border-radius:10px;padding:16px;border-left:3px solid var(--blue);">
+          <p style="font-size:12px;color:var(--soft);line-height:1.8;margin-bottom:10px;">
+            各半荘を「4人のトーナメント」として、順位に基づく実績スコアと期待スコアの差でレーティングを更新します。
+          </p>
+          <div style="background:var(--card);border-radius:6px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);line-height:1.9;">
+            初期値：1500点　　K値：40<br>
+            順位別実績スコア：1位=1.0 / 2位=0.6 / 3位=0.4 / 4位=0.0<br>
+            期待スコア = Σ（自分より低レーティングの人数 ÷ (参加人数−1)）<br>
+            レーティング変動 = K × (実績スコア − 期待スコア)
+          </div>
+          <p style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.7;">
+            ※ 反復計算を5回繰り返して収束させています。対象期間内のゲームのみで計算します。
+          </p>
+        </div>
+      </div>
+
+      <!-- ランキング除外 -->
+      <div class="settings-box" style="margin-top:16px;border-top:2px solid var(--red);padding-top:20px;">
+        <h3 style="margin-bottom:4px;font-size:15px;letter-spacing:.05em;">🚫 ランキング除外の判定フロー</h3>
+        <p style="font-size:11px;color:var(--dim);margin-bottom:16px;">参加数が少ないプレイヤーはランキング対象外になる場合があります。</p>
+        <div style="background:var(--surface);border-radius:10px;padding:16px;border-left:3px solid var(--red);">
+          <div style="font-size:12px;color:var(--soft);line-height:1.9;">
+            <div style="margin-bottom:6px;"><span style="color:var(--text);font-weight:700;">①</span> 半荘数 &lt; 総半荘数 × 閾値% → 除外候補</div>
+            <div style="margin-bottom:6px;"><span style="color:var(--text);font-weight:700;">②</span> 除外候補でも「参加日数 ≥ N日 <strong>かつ</strong> 半荘数 ≥ N回」の両方を満たす場合は救済 → ランキング対象</div>
+            <div><span style="color:var(--text);font-weight:700;">③</span> 救済されなかったプレイヤーは「参加数不足」として別表示（補正なし参考スコアを表示）</div>
+          </div>
+          <p style="font-size:11px;color:var(--dim);margin-top:10px;line-height:1.7;">
+            例）総半荘数200局・閾値3%の場合、6局未満が除外候補。<br>
+            うち参加日数2日以上かつ半荘10局以上なら救済されてランキングに含まれます。
+          </p>
+        </div>
+      </div>
 
       </div>
     </div>
@@ -621,11 +749,19 @@ function calcRatings(raw, section) {
     return eloMax === eloMin ? 50 : Math.max(0, Math.min(100, (v - eloMin) / (eloMax - eloMin) * 100));
   }
 
-  // TotalScore正規化用min/max（この期間）
+  // 全指標を対象期間ベースで正規化
   const tsVals = names.map(n => raw[n][section]['Total Score'] ?? 0);
   const tsMin = Math.min(...tsVals), tsMax = Math.max(...tsVals);
   function normTS(v) {
     return tsMax === tsMin ? 50 : Math.max(0, Math.min(100, (v - tsMin) / (tsMax - tsMin) * 100));
+  }
+  // TOP率・4着回避率・Ave.Score・連対率も対象期間ベース
+  const sectionNormMap = {};
+  for (const m of ['TOP率','4着回避率','Ave.Score','連対率']) {
+    const key = m;
+    const vals = names.map(n => raw[n][section][key] ?? 0);
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    sectionNormMap[m] = v => mx === mn ? 50 : Math.max(0, Math.min(100, (v - mn) / (mx - mn) * 100));
   }
 
   // 各プレイヤーのスコア計算（補正あり・なし両方）
@@ -641,7 +777,7 @@ function calcRatings(raw, section) {
       } else if (m === 'TotalScore') {
         val = d['Total Score'] ?? 0; norm = normTS(val);
       } else {
-        val = d[m] ?? 0; norm = normG(val, m);
+        val = d[m] ?? 0; norm = sectionNormMap[m] ? sectionNormMap[m](val) : normG(val, m);
       }
       norms[m] = norm;
       weighted += norm * (WEIGHTS[m]/100);
