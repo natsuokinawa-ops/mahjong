@@ -1521,16 +1521,9 @@ async function publishToGitHub() {
 // data.json ローダー（GitHub Pages公開時に自動実行）
 (function() {
   if (location.protocol === 'file:') return;
-  var repo = localStorage.getItem('mahjong_gh_repo') || '';
-  var path = localStorage.getItem('mahjong_gh_path') || 'index.html';
-  var parts = repo.split('/');
-  var dataUrl;
-  if (parts.length === 2) {
-    var basePath = path.replace(/[^/]*$/, '');
-    dataUrl = 'https://' + parts[0] + '.github.io/' + parts[1] + '/' + basePath + 'data.json';
-  } else {
-    dataUrl = './data.json';
-  }
+  // 現在のページと同じディレクトリのdata.jsonを取得
+  var base = location.href.split('?')[0].replace(/[^/]*$/, '');
+  var dataUrl = base + 'data.json';
   fetch(dataUrl + '?v=' + Date.now())
     .then(function(r) {
       if (!r.ok) throw new Error('data.json not found');
