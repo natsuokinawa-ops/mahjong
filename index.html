@@ -1467,6 +1467,60 @@ async function publishToGitHub() {
 }
 
 
+function showGHSettingsModal(cfg) {
+  var existing = document.getElementById('ghModal');
+  if (existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'ghModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#111120;border:1px solid #1e1e30;border-radius:12px;padding:24px;width:90%;max-width:420px;color:#e2e2f0;font-family:"Noto Sans JP",sans-serif;';
+
+  box.innerHTML = ''
+    + '<h3 style="margin-bottom:16px;font-size:16px;color:#f5c842">\u2699\uFE0F GitHub\u8A2D\u5B9A</h3>'
+    + '<div style="margin-bottom:12px">'
+    +   '<label style="display:block;font-size:12px;color:#aaaacc;margin-bottom:4px">Personal Access Token</label>'
+    +   '<input id="ghTokenInput" type="password" placeholder="ghp_..." style="width:100%;padding:8px;background:#0d0d15;border:1px solid #1e1e30;border-radius:6px;color:#e2e2f0;font-size:13px;">'
+    + '</div>'
+    + '<div style="margin-bottom:12px">'
+    +   '<label style="display:block;font-size:12px;color:#aaaacc;margin-bottom:4px">\u30EA\u30DD\u30B8\u30C8\u30EA (username/repo)</label>'
+    +   '<input id="ghRepoInput" type="text" placeholder="username/reponame" style="width:100%;padding:8px;background:#0d0d15;border:1px solid #1e1e30;border-radius:6px;color:#e2e2f0;font-size:13px;">'
+    + '</div>'
+    + '<div style="margin-bottom:20px">'
+    +   '<label style="display:block;font-size:12px;color:#aaaacc;margin-bottom:4px">\u30D5\u30A1\u30A4\u30EB\u30D1\u30B9</label>'
+    +   '<input id="ghPathInput" type="text" placeholder="index.html" style="width:100%;padding:8px;background:#0d0d15;border:1px solid #1e1e30;border-radius:6px;color:#e2e2f0;font-size:13px;">'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end">'
+    +   '<button onclick="document.getElementById(\'ghModal\').remove()" style="padding:8px 16px;border-radius:6px;border:1px solid #1e1e30;background:transparent;color:#aaaacc;cursor:pointer">\u30AD\u30E3\u30F3\u30BB\u30EB</button>'
+    +   '<button onclick="saveAndPublish()" style="padding:8px 16px;border-radius:6px;border:none;background:#f5c842;color:#000;font-weight:700;cursor:pointer">\u4FDD\u5B58\u3057\u3066\u516C\u958B</button>'
+    + '</div>';
+
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+
+  // 現在の値をセット
+  document.getElementById('ghTokenInput').value = cfg.token || '';
+  document.getElementById('ghRepoInput').value  = cfg.repo  || '';
+  document.getElementById('ghPathInput').value  = cfg.path  || 'index.html';
+
+  // モーダル外クリックで閉じる
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+}
+
+function saveAndPublish() {
+  var token = document.getElementById('ghTokenInput').value.trim();
+  var repo  = document.getElementById('ghRepoInput').value.trim();
+  var path  = document.getElementById('ghPathInput').value.trim() || 'index.html';
+  if (!token) { alert('\u30C8\u30FC\u30AF\u30F3\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044'); return; }
+  if (!repo || !repo.includes('/')) { alert('\u30EA\u30DD\u30B8\u30C8\u30EA\u306F\u300C\u30E6\u30FC\u30B6\u30FC\u540D/\u30EA\u30DD\u30B8\u30C8\u30EA\u540D\u300D\u5F62\u5F0F\u3067\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044'); return; }
+  saveGHConfig(token, repo, path);
+  document.getElementById('ghModal').remove();
+  publishToGitHub();
+}
+
+
 
 
 // ════════════════════════════════════════════════
