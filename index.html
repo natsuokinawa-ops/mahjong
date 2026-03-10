@@ -1408,64 +1408,6 @@ async function uploadFile(cfg, filePath, contentStr, commitMsg) {
   if(!res.ok){ var er=await res.json(); throw new Error(er.message||res.status); }
 }
 
-function buildViewerHTML() {
-  var lastDate = document.getElementById("dataDateLabel").textContent
-    .replace("\uD83D\uDCC5 \u6700\u7D42\u5B9F\u65BD\u65E5\uFF1A","").trim();
-  var dataB64 = btoa(unescape(encodeURIComponent(
-    JSON.stringify({players:RAW,years:YEARS,games:GAMES,weights:WEIGHTS,lastDate:lastDate}))));
-
-  var loaderSc = ["<scr","ipt>(function(){",
-    "var _d=JSON.parse(decodeURIComponent(escape(atob(",JSON.stringify(dataB64),")));",
-    "window.RAW=_d.players||{};window.YEARS=_d.years||[];window.GAMES=_d.games||[];",
-    "if(_d.weights)window.WEIGHTS=_d.weights;",
-    "function _i(){",
-    "ELO_RATINGS=calcElo(GAMES);buildGMM(RAW);",
-    "var s=YEARS.length?YEARS[0]:'TOTAL';",
-    "CUR_RANK_SEC=s;CUR_CMP_SEC=s;CUR_SORT='final';",
-    "buildPeriodBtns('rankPeriodSelector',s,'rank');buildPeriodBtns('cmpPeriodSelector',s,'cmp');",
-    "var dbg=document.createElement('div');",
-    "dbg.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:red;color:white;font-size:11px;padding:4px;word-break:break-all;';",
-    "dbg.textContent='RAW:'+Object.keys(RAW).length+' YEARS:'+JSON.stringify(YEARS)+' GAMES:'+GAMES.length+' sec:'+s;",
-    "document.body.appendChild(dbg);",
-    "applyRankSection(s);applyCmpSection(s);buildWeightGrid();updateSummary();",
-    "if(_d.lastDate){var l=document.getElementById('dataDateLabel');",
-    "if(l){l.textContent='\uD83D\uDCC5\u6700\u7D42\u5B9F\u65BD\u65E5\uFF1A'+_d.lastDate;l.style.display='block';}}",
-    "var b=document.createElement('div');",
-    "b.style.cssText='text-align:center;padding:6px;background:rgba(66,232,160,.1);border-bottom:1px solid rgba(66,232,160,.25);font-size:11px;color:#42e8a0;font-family:monospace;';",
-    "b.textContent='\u2705 \u6700\u65B0\u30C7\u30FC\u30BF ('+(_d.lastDate||'')+')';",
-    "document.body.insertAdjacentElement('afterbegin',b);}",
-    "if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_i);else setTimeout(_i,300);",
-    "function _setup(){",
-    "document.querySelectorAll('.tab-btn').forEach(function(b){",
-    "b.addEventListener('click',function(){switchTab(b.dataset.tab);});});",
-    "}",
-    "if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_setup);else _setup();",
-    "})()"
-  ].join("") + "<" + "/script>";
-
-  // DOMの表示を一時変更してouterHTMLを取得
-  var uz = document.getElementById("uploadZone");
-  var nd = document.getElementById("noDataMsg");
-  var ma = document.getElementById("mainApp");
-  var eb = document.getElementById("exportBtn");
-  var s0=uz.style.display, s1=nd.style.display, s2=ma.style.display, s3=eb.style.display;
-
-  uz.style.display="none"; nd.style.display="none";
-  ma.style.display="block"; eb.style.display="none";
-
-  var src = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-
-  uz.style.display=s0; nd.style.display=s1; ma.style.display=s2; eb.style.display=s3;
-
-  // 前回のローダーを除去して新しいローダーを挿入
-  var openTag = "<scr"+"ipt>";
-  var closeTag = "</"+"script>";
-  var loaderPattern = new RegExp(openTag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + "\\(function\\(\\)\\{var _d=[\\s\\S]*?" + closeTag.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + "\\s*<\\/body>");
-  src = src.replace(loaderPattern, "<"+"\/body>");
-  src = src.replace("<"+"\/body>", loaderSc + "\n<"+"\/body>");
-  return src;
-}
-
 async function publishToGitHub() {
   var btn = document.getElementById("exportBtn");
   var cfg = getGHConfig();
@@ -1475,8 +1417,68 @@ async function publishToGitHub() {
   try {
     var lastDate = document.getElementById("dataDateLabel").textContent
       .replace("\uD83D\uDCC5 \u6700\u7D42\u5B9F\u65BD\u65E5\uFF1A","").trim();
-    var viewerHtml = buildViewerHTML();
-    await uploadFile(cfg, cfg.path, viewerHtml, "\uD83D\uDCCA \u30C7\u30FC\u30BF\u66F4\u65B0 "+lastDate);
+
+    // データをJSON化してBase64エンコード
+    var dataJson = JSON.stringify({
+      players: RAW,
+      years: YEARS,
+      games: GAMES,
+      weights: WEIGHTS,
+      lastDate: lastDate
+    });
+    var dataB64 = btoa(unescape(encodeURIComponent(dataJson)));
+
+    // テンプレートHTMLをGitHubから取得
+    var ghRawUrl = "https://raw.githubusercontent.com/" + cfg.repo + "/main/" + cfg.path;
+    var resp = await fetch(ghRawUrl + "?nocache=" + Date.now());
+    if(!resp.ok) throw new Error("GitHub\u304B\u3089HTML\u53D6\u5F97\u5931\u6557: " + resp.status);
+    var templateHtml = await resp.text();
+
+    // テンプレートHTMLが既に公開済みビューアなら純粋なテンプレに戻す
+    // uploadZone/mainAppの表示を正しく設定
+    templateHtml = templateHtml
+      .replace(/id="uploadZone"[^>]*>/g, 'id="uploadZone" style="display:none">')
+      .replace(/id="noDataMsg"[^>]*>/g,  'id="noDataMsg" class="no-data" style="display:none">')
+      .replace(/id="mainApp"[^>]*>/g,    'id="mainApp" style="display:block">')
+      .replace(/id="exportBtn"[^>]*>/g,  'id="exportBtn" style="display:none" onclick="publishToGitHub()">');
+
+    // 前回のローダーscriptを除去
+    templateHtml = templateHtml.replace(/<script>\(function\(\)\{var RAW_DATA[\s\S]*?<\/script>\s*(?=<\/body>)/g, "");
+
+    // 新しいローダーscriptを挿入
+    var loaderScript = '<script>\n(function(){\n'
+      + 'var _d=JSON.parse(decodeURIComponent(escape(atob("' + dataB64 + '"))));\n'
+      + 'RAW=_d.players||{};\n'
+      + 'YEARS=_d.years||[];\n'
+      + 'GAMES=_d.games||[];\n'
+      + 'if(_d.weights) WEIGHTS=_d.weights;\n'
+      + 'function _init(){\n'
+      + '  ELO_RATINGS=calcElo(GAMES);\n'
+      + '  buildGMM(RAW);\n'
+      + '  var s=YEARS.length?YEARS[0]:"TOTAL";\n'
+      + '  CUR_RANK_SEC=s; CUR_CMP_SEC=s; CUR_SORT="final";\n'
+      + '  buildPeriodBtns("rankPeriodSelector",s,"rank");\n'
+      + '  buildPeriodBtns("cmpPeriodSelector",s,"cmp");\n'
+      + '  applyRankSection(s);\n'
+      + '  applyCmpSection(s);\n'
+      + '  buildWeightGrid();\n'
+      + '  updateSummary();\n'
+      + '  if(_d.lastDate){\n'
+      + '    var l=document.getElementById("dataDateLabel");\n'
+      + '    if(l){l.textContent="\uD83D\uDCC5\u6700\u7D42\u5B9F\u65BD\u65E5\uFF1A"+_d.lastDate; l.style.display="block";}\n'
+      + '  }\n'
+      + '}\n'
+      + 'if(document.readyState==="loading"){\n'
+      + '  document.addEventListener("DOMContentLoaded",_init);\n'
+      + '} else {\n'
+      + '  _init();\n'
+      + '}\n'
+      + '})();\n'
+      + '<\/script>';
+
+    templateHtml = templateHtml.replace('<\/body>', loaderScript + '\n<\/body>');
+
+    await uploadFile(cfg, cfg.path, templateHtml, "\uD83D\uDCCA \u30C7\u30FC\u30BF\u66F4\u65B0 " + lastDate);
     btn.textContent="\u2705 \u516C\u958B\u5B8C\u4E86!";
     setTimeout(function(){btn.disabled=false;btn.innerHTML="\uD83D\uDE80 GitHub\u306B\u516C\u958B";},3000);
   } catch(err) {
@@ -1484,7 +1486,7 @@ async function publishToGitHub() {
     btn.disabled=false; btn.innerHTML="\uD83D\uDE80 GitHub\u306B\u516C\u958B";
     if(err.message&&err.message.includes("Bad credentials")){
       alert("\u30C8\u30FC\u30AF\u30F3\u304C\u7121\u52B9\u3067\u3059"); showGHSettingsModal(getGHConfig());
-    } else { alert("\u30A8\u30E9\u30FC: "+err.message); }
+    } else { alert("\u30A8\u30E9\u30FC: " + err.message); }
   }
 }
 
