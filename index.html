@@ -288,6 +288,7 @@ h1 em{color:var(--gold);font-style:normal;}
     <div class="tabs">
       <button class="tab-btn active" data-tab="ranking">🏆 総合ランキング</button>
       <button class="tab-btn" data-tab="compare">📊 プレイヤー比較</button>
+      <button class="tab-btn" data-tab="guide">📖 スコア算出方法</button>
       <button class="tab-btn" data-tab="settings">⚙️ スコア算出設定</button>
     </div>
 
@@ -349,64 +350,8 @@ h1 em{color:var(--gold);font-style:normal;}
       <div id="compareContent"><div class="select-hint">↑ 上のボタンからプレイヤーを選んでください</div></div>
     </div>
 
-    <!-- ═══ SETTINGS TAB ═══ -->
-    <div class="tab-pane" id="tab-settings">
-      <div class="settings-box" style="margin-bottom:16px;">
-        <h3>ランキング除外条件</h3>
-        <p style="font-size:12px;color:var(--soft);margin-bottom:16px;line-height:1.6;">
-          総半荘数に対する割合が閾値%未満のプレイヤーを除外します。<br>
-          ただし参加日数・半荘回数の両方を満たす場合は除外されません。
-        </p>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
-          <div class="weight-item">
-            <div class="weight-label">閾値（総半荘数に対する%）</div>
-            <div class="weight-input-row">
-              <button class="weight-ud" onclick="adjustExcl('pct',-1)">▼</button>
-              <input type="number" class="weight-val" id="exclPct" value="3" min="0" max="50" style="width:54px;" oninput="onExclInput()">
-              <button class="weight-ud" onclick="adjustExcl('pct',1)">▲</button>
-              <span class="weight-pct">%</span>
-            </div>
-          </div>
-          <div class="weight-item">
-            <div class="weight-label">救済条件：参加日数</div>
-            <div class="weight-input-row">
-              <button class="weight-ud" onclick="adjustExcl('days',-1)">▼</button>
-              <input type="number" class="weight-val" id="exclDays" value="2" min="0" max="30" style="width:54px;" oninput="onExclInput()">
-              <button class="weight-ud" onclick="adjustExcl('days',1)">▲</button>
-              <span class="weight-pct">日以上</span>
-            </div>
-          </div>
-          <div class="weight-item">
-            <div class="weight-label">救済条件：半荘回数</div>
-            <div class="weight-input-row">
-              <button class="weight-ud" onclick="adjustExcl('hanso',-1)">▼</button>
-              <input type="number" class="weight-val" id="exclHanso" value="10" min="0" max="100" style="width:54px;" oninput="onExclInput()">
-              <button class="weight-ud" onclick="adjustExcl('hanso',1)">▲</button>
-              <span class="weight-pct">回以上</span>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <div id="exclPreview" style="font-size:12px;color:var(--soft);flex:1;"></div>
-        </div>
-      </div>
-      <div class="settings-box">
-        <h3>スコア算出設定</h3>
-        <div style="margin-bottom:16px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;">
-          <div style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace;letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px;">🔒 パスワード変更</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <input type="password" id="newPwInput" placeholder="新しいパスワード（4〜8文字）" style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;padding:6px 10px;">
-            <button onclick="changePW()" style="padding:6px 14px;border-radius:4px;border:1px solid var(--gold);background:rgba(245,200,66,.08);color:var(--gold);cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;">変更</button>
-          </div>
-        </div>
-        <div class="weight-grid" id="weightGrid"></div>
-        <div class="total-row">
-          <span class="total-label">合計</span>
-          <span class="total-val" id="weightTotal">100%</span>
-          <span class="total-warn" id="weightWarn" style="display:none">⚠ 合計が100%になるよう調整してください</span>
-        </div>
-      </div>
-
+    <!-- ═══ GUIDE TAB ═══ -->
+    <div class="tab-pane" id="tab-guide">
       <!-- スコア算出方法の説明 -->
       <div class="settings-box" style="margin-top:16px;border-top:2px solid var(--gold);padding-top:20px;">
         <h3 style="margin-bottom:4px;font-size:15px;letter-spacing:.05em;">📐 スコア算出方法</h3>
@@ -532,6 +477,65 @@ h1 em{color:var(--gold);font-style:normal;}
             例）総半荘数200局・閾値3%の場合、6局未満が除外候補。<br>
             うち参加日数2日以上かつ半荘10局以上なら救済されてランキングに含まれます。
           </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SETTINGS TAB ═══ -->
+    <div class="tab-pane" id="tab-settings">
+      <div class="settings-box" style="margin-bottom:16px;">
+        <h3>ランキング除外条件</h3>
+        <p style="font-size:12px;color:var(--soft);margin-bottom:16px;line-height:1.6;">
+          総半荘数に対する割合が閾値%未満のプレイヤーを除外します。<br>
+          ただし参加日数・半荘回数の両方を満たす場合は除外されません。
+        </p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+          <div class="weight-item">
+            <div class="weight-label">閾値（総半荘数に対する%）</div>
+            <div class="weight-input-row">
+              <button class="weight-ud" onclick="adjustExcl('pct',-1)">▼</button>
+              <input type="number" class="weight-val" id="exclPct" value="3" min="0" max="50" style="width:54px;" oninput="onExclInput()">
+              <button class="weight-ud" onclick="adjustExcl('pct',1)">▲</button>
+              <span class="weight-pct">%</span>
+            </div>
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">救済条件：参加日数</div>
+            <div class="weight-input-row">
+              <button class="weight-ud" onclick="adjustExcl('days',-1)">▼</button>
+              <input type="number" class="weight-val" id="exclDays" value="2" min="0" max="30" style="width:54px;" oninput="onExclInput()">
+              <button class="weight-ud" onclick="adjustExcl('days',1)">▲</button>
+              <span class="weight-pct">日以上</span>
+            </div>
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">救済条件：半荘回数</div>
+            <div class="weight-input-row">
+              <button class="weight-ud" onclick="adjustExcl('hanso',-1)">▼</button>
+              <input type="number" class="weight-val" id="exclHanso" value="10" min="0" max="100" style="width:54px;" oninput="onExclInput()">
+              <button class="weight-ud" onclick="adjustExcl('hanso',1)">▲</button>
+              <span class="weight-pct">回以上</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div id="exclPreview" style="font-size:12px;color:var(--soft);flex:1;"></div>
+        </div>
+      </div>
+      <div class="settings-box">
+        <h3>スコア算出設定</h3>
+        <div style="margin-bottom:16px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;">
+          <div style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace;letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px;">🔒 パスワード変更</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <input type="password" id="newPwInput" placeholder="新しいパスワード（4〜8文字）" style="flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;padding:6px 10px;">
+            <button onclick="changePW()" style="padding:6px 14px;border-radius:4px;border:1px solid var(--gold);background:rgba(245,200,66,.08);color:var(--gold);cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;">変更</button>
+          </div>
+        </div>
+        <div class="weight-grid" id="weightGrid"></div>
+        <div class="total-row">
+          <span class="total-label">合計</span>
+          <span class="total-val" id="weightTotal">100%</span>
+          <span class="total-warn" id="weightWarn" style="display:none">⚠ 合計が100%になるよう調整してください</span>
         </div>
       </div>
 
