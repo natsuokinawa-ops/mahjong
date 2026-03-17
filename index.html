@@ -417,7 +417,16 @@ h1 em{color:var(--gold);font-style:normal;}
             </p>
             <div style="background:var(--card);border-radius:6px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);line-height:1.9;">
               k　　　　 = max(5, 対象期間の中央値半荘数 × 0.5)<br>
-              信頼度　　= 半荘数 ÷ (半荘数 + k)<br>
+              <br>
+              【半荘数が75%到達局数未満の場合】<br>
+              信頼度 = 半荘数 ÷ (半荘数 + k)<br>
+              <br>
+              【75%到達局数 〜 100%到達局数の場合】<br>
+              信頼度 = 75% + (半荘数 − 75%到達局数) ÷ (100%到達局数 − 75%到達局数) × 25%<br>
+              <br>
+              【100%到達局数以上の場合】<br>
+              信頼度 = 100%（固定）<br>
+              <br>
               最終スコア = 信頼度 × 重み付きスコア + (1 − 信頼度) × 50
             </div>
             <p style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.7;">
@@ -522,6 +531,36 @@ h1 em{color:var(--gold);font-style:normal;}
           <div id="exclPreview" style="font-size:12px;color:var(--soft);flex:1;"></div>
         </div>
       </div>
+
+      <!-- 信頼補正設定 -->
+      <div class="settings-box" style="margin-bottom:16px;">
+        <h3 style="margin-bottom:8px;">信頼補正設定</h3>
+        <p style="font-size:12px;color:var(--soft);margin-bottom:16px;line-height:1.6;">
+          指定した局数に達すると信頼度が上がります。到達局数未満は従来の計算式（半荘数÷(半荘数＋k)）を使用します。
+        </p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+          <div class="weight-item">
+            <div class="weight-label">信頼度75%到達局数</div>
+            <div class="weight-input-row">
+              <button class="weight-ud" onclick="adjustCred('t75',-1)">▼</button>
+              <input type="number" class="weight-val" id="credT75" value="20" min="1" max="99" style="width:54px;" oninput="onCredInput()">
+              <button class="weight-ud" onclick="adjustCred('t75',1)">▲</button>
+              <span class="weight-pct">局</span>
+            </div>
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">信頼度100%到達局数</div>
+            <div class="weight-input-row">
+              <button class="weight-ud" onclick="adjustCred('t100',-1)">▼</button>
+              <input type="number" class="weight-val" id="credT100" value="50" min="1" max="200" style="width:54px;" oninput="onCredInput()">
+              <button class="weight-ud" onclick="adjustCred('t100',1)">▲</button>
+              <span class="weight-pct">局</span>
+            </div>
+          </div>
+        </div>
+        <div id="credPreview" style="font-size:12px;color:var(--soft);"></div>
+      </div>
+
       <div class="settings-box">
         <h3>スコア算出設定</h3>
         <div style="margin-bottom:16px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;">
@@ -577,15 +616,7 @@ function parseExcel(buffer) {
     return isNaN(n) ? null : n;
   }
 
-  // セクション検出（B列）
-  const sections = {};
-  for (let r = 0; r < 200; r++) {
-    const v = cv(r, 1);
-    if (v === 'TOTAL') sections['TOTAL'] = r;
-    else if (typeof v === 'number' && v >= 2020 && v <= 2100) sections[String(Math.floor(v))] = r;
-  }
-
-  // 最終実施日: C列=月日シリアル、次行D列=年
+  // 最終実施日
   let lastDate = null;
   const excelEpoch = new Date(1899, 11, 30);
   let latestMs = 0;
@@ -618,40 +649,147 @@ function parseExcel(buffer) {
     if (name) playerCols[name] = col;
   }
 
-  // 集計データ（既存）
-  const players = {};
-  for (const [name, col] of Object.entries(playerCols)) {
-    players[name] = {};
-    for (const [sec, base] of Object.entries(sections)) {
-      const p = {};
-      for (const [stat, off] of Object.entries(STAT_OFFSETS)) p[stat] = nv(base+off, col);
-      if (p['半荘'] > 0) players[name][sec] = p;
-    }
-    if (!Object.keys(players[name]).length) delete players[name];
-  }
-
-  // 半荘単位の試合データ抽出
-  // E列(col4,0-indexed)=1 かつ D列=年 の行が各半荘
-  // プレイヤー列=スコア、プレイヤー列+1=順位(1-4)
+  // ── ゲームデータ抽出 ──────────────────────────────
+  // 開催日ヘッダー行：C列=日付シリアル、D列=小さい連番
+  // ゲーム行：E列=1、C列はNone → 直前の開催日を引き継ぐ
   const games = [];
+  const daysByPlayerYear = {}; // {name: {year: Set<dateKey>}}
+  let currentDateKey = null;
+
   for (let r = 100; r < 1500; r++) {
+    // 開催日ヘッダー行の検出
+    // 形式1: C列=日付シリアル/Date かつ D列='第XX回'（文字列）
+    // 形式2: C列=日付シリアル/Date かつ D列=小さい連番（1〜200）
+    const cCell = ws[XLSX.utils.encode_cell({r, c:2})];
+    if (cCell && cCell.v != null) {
+      const cv2 = cCell.v;
+      const isSerial  = typeof cv2 === 'number' && cv2 > 40000 && cv2 < 60000;
+      const isDateObj = cCell.t === 'd' && cv2 instanceof Date;
+      if (isSerial || isDateObj) {
+        const dCell = ws[XLSX.utils.encode_cell({r, c:3})];
+        const dv = dCell ? dCell.v : null;
+        const isHeader =
+          (typeof dv === 'string' && dv.includes('第')) ||  // '第XX回'
+          (typeof dv === 'number' && dv >= 1 && dv <= 200);    // 小さい連番
+        if (isHeader) {
+          let dd;
+          if (isDateObj) { dd = cv2; }
+          else { dd = new Date(excelEpoch.getTime() + cv2*86400000); }
+          currentDateKey = `${dd.getFullYear()}-${dd.getMonth()+1}-${dd.getDate()}`;
+        }
+      }
+    }
+
     const eVal = nv(r, 4);
     const dVal = nv(r, 3);
     if (eVal !== 1 || !dVal || dVal < 2020 || dVal > 2100) continue;
     const year = Math.floor(dVal);
+
     const participants = [];
     for (const [name, scoreCol] of Object.entries(playerCols)) {
       const score = nv(r, scoreCol);
       const rank  = nv(r, scoreCol + 1);
       if (score !== null && rank !== null && rank >= 1 && rank <= 4) {
         participants.push({name, score, rank});
+        // 参加日数記録
+        if (currentDateKey) {
+          if (!daysByPlayerYear[name]) daysByPlayerYear[name] = {};
+          if (!daysByPlayerYear[name][year]) daysByPlayerYear[name][year] = new Set();
+          daysByPlayerYear[name][year].add(currentDateKey);
+        }
       }
     }
     if (participants.length === 4) games.push({year, players: participants});
   }
 
-  return { players, years: Object.keys(sections).filter(s=>s!=='TOTAL').sort().reverse(), lastDate, games };
+  // ── ゲームデータから集計を自前で計算 ────────────────
+  // yearStats[year][name] = {hanso, total, top, s2nd, s3rd, s4th}
+  const yearStats = {};
+  for (const game of games) {
+    const y = String(game.year);
+    if (!yearStats[y]) yearStats[y] = {};
+    for (const p of game.players) {
+      const n = p.name;
+      if (!yearStats[y][n]) yearStats[y][n] = {hanso:0, total:0, top:0, s2nd:0, s3rd:0, s4th:0};
+      const s = yearStats[y][n];
+      s.hanso++;
+      s.total += p.score;
+      if (p.rank===1) s.top++;
+      else if (p.rank===2) s.s2nd++;
+      else if (p.rank===3) s.s3rd++;
+      else if (p.rank===4) s.s4th++;
+    }
+  }
+
+  // TOTAL集計
+  yearStats['TOTAL'] = {};
+  for (const [y, ydata] of Object.entries(yearStats)) {
+    if (y === 'TOTAL') continue;
+    for (const [name, s] of Object.entries(ydata)) {
+      if (!yearStats['TOTAL'][name]) yearStats['TOTAL'][name] = {hanso:0, total:0, top:0, s2nd:0, s3rd:0, s4th:0};
+      const t = yearStats['TOTAL'][name];
+      t.hanso += s.hanso; t.total += s.total;
+      t.top += s.top; t.s2nd += s.s2nd; t.s3rd += s.s3rd; t.s4th += s.s4th;
+    }
+  }
+
+  // ── players オブジェクト構築 ─────────────────────────
+  const players = {};
+  const allYears = Object.keys(yearStats).filter(y => y !== 'TOTAL');
+
+  for (const name of Object.keys(playerCols)) {
+    players[name] = {};
+
+    for (const sec of ['TOTAL', ...allYears]) {
+      const s = yearStats[sec] && yearStats[sec][name];
+      if (!s || s.hanso === 0) continue;
+
+      const hanso  = s.hanso;
+      const total  = s.total;
+      const top    = s.top;
+      const s2nd   = s.s2nd;
+      const s3rd   = s.s3rd;
+      const s4th   = s.s4th;
+      const ave    = hanso > 0 ? total / hanso : 0;
+      const topR   = hanso > 0 ? top / hanso : 0;
+      const renR   = hanso > 0 ? (top + s2nd) / hanso : 0;
+      const avoidR = hanso > 0 ? 1 - s4th / hanso : 0;
+
+      // 参加日数
+      let days = 0;
+      if (sec === 'TOTAL') {
+        for (const y of allYears) {
+          days += (daysByPlayerYear[name] && daysByPlayerYear[name][parseInt(y)])
+            ? daysByPlayerYear[name][parseInt(y)].size : 0;
+        }
+      } else {
+        days = (daysByPlayerYear[name] && daysByPlayerYear[name][parseInt(sec)])
+          ? daysByPlayerYear[name][parseInt(sec)].size : 0;
+      }
+
+      players[name][sec] = {
+        '参加日数':    days,
+        '半荘':        hanso,
+        'Total Score': total,
+        'Ave.Score':   ave,
+        'TOP':         top,
+        '2着':         s2nd,
+        '3着':         s3rd,
+        '4着':         s4th,
+        'TOP率':       topR,
+        '連対率':      renR,
+        '4着回避率':   avoidR,
+        'Rank Rating': 0,
+        '役満':        0,
+      };
+    }
+    if (!Object.keys(players[name]).length) delete players[name];
+  }
+
+  const years = allYears.sort().reverse();
+  return { players, years, lastDate, games };
 }
+
 
 // ════════════════════════════════════════════════
 // ELO RATING
@@ -726,11 +864,18 @@ function normG(val, m) {
 let EXCL_PCT  = 3;   // 総半荘数に対する閾値%
 let EXCL_DAYS = 2;   // 救済条件：参加日数
 let EXCL_HANSO = 10; // 救済条件：半荘回数
+let CRED_T75  = 20;  // 信頼度75%到達局数
+let CRED_T100 = 50;  // 信頼度100%到達局数
 
 // 動的信頼補正: k = max(5, 期間中央値 × 0.5)
 function calcCred(hanso, medianHanso) {
+  if (hanso <= 0) return 0;
   const k = Math.max(5, medianHanso * 0.5);
-  return hanso > 0 ? hanso / (hanso + k) : 0;
+  if (hanso >= CRED_T100) return 1.0;
+  if (hanso >= CRED_T75) {
+    return 0.75 + (hanso - CRED_T75) / (CRED_T100 - CRED_T75) * 0.25;
+  }
+  return hanso / (hanso + k);
 }
 
 function calcRatings(raw, section) {
@@ -987,7 +1132,7 @@ function renderRanking() {
         <div class="rank-name-row">
           <span class="rank-name">${d.name}</span>
           <span class="rank-badge ${g.cls}">${g.label}</span>
-          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">${d['半荘']}局</span>
+          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">${d['半荘']}局（${d['参加日数']??0}日）</span>
         </div>
         <div class="rank-bars">
           ${bars.map(b=>`<div class="mini-bar">
@@ -1329,6 +1474,32 @@ function adjustExcl(type, delta) {
   onExclInput();
 }
 
+function adjustCred(type, delta) {
+  const ids = {t75:'credT75', t100:'credT100'};
+  const el = document.getElementById(ids[type]);
+  el.value = Math.max(1, (parseInt(el.value)||0) + delta);
+  onCredInput();
+}
+
+function onCredInput() {
+  const t75  = parseInt(document.getElementById('credT75').value)  || 20;
+  const t100 = parseInt(document.getElementById('credT100').value) || 50;
+  const preview = document.getElementById('credPreview');
+  if (t75 >= t100) {
+    if (preview) preview.innerHTML = '<span style="color:var(--red)">⚠ 75%到達局数は100%到達局数より小さくしてください</span>';
+    return;
+  }
+  if (preview) preview.innerHTML = `現在の設定：<strong style="color:var(--gold)">${t75}局</strong>で信頼度75%、<strong style="color:var(--gold)">${t100}局以上</strong>で信頼度100%`;
+}
+
+function initCred() {
+  const t75El  = document.getElementById('credT75');
+  const t100El = document.getElementById('credT100');
+  if (t75El)  t75El.value  = CRED_T75;
+  if (t100El) t100El.value = CRED_T100;
+  onCredInput();
+}
+
 function onExclInput() {
   const pct   = parseInt(document.getElementById('exclPct').value)   || 0;
   const days  = parseInt(document.getElementById('exclDays').value)  || 0;
@@ -1352,6 +1523,7 @@ function initExclUI() {
   document.getElementById('exclDays').value  = EXCL_DAYS;
   document.getElementById('exclHanso').value = EXCL_HANSO;
   onExclInput();
+  initCred();
 }
 
 // ════════════════════════════════════════════════
@@ -1488,6 +1660,9 @@ function switchTab(id) {
     EXCL_PCT   = parseInt(document.getElementById('exclPct')?.value)   || EXCL_PCT;
     EXCL_DAYS  = parseInt(document.getElementById('exclDays')?.value)  || EXCL_DAYS;
     EXCL_HANSO = parseInt(document.getElementById('exclHanso')?.value) || EXCL_HANSO;
+    const _t75  = parseInt(document.getElementById('credT75')?.value);
+    const _t100 = parseInt(document.getElementById('credT100')?.value);
+    if (_t75 && _t100 && _t75 < _t100) { CRED_T75 = _t75; CRED_T100 = _t100; }
     applyRankSection(CUR_RANK_SEC);
   }
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
