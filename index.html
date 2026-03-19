@@ -416,35 +416,41 @@ h1 em{color:var(--gold);font-style:normal;}
               半荘数が少ないプレイヤーは偶然に左右されやすいため、50点（平均）方向に補正します。半荘数が増えるほど補正は弱まります。
             </p>
             <div style="background:var(--card);border-radius:6px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);line-height:1.9;">
-              k　　　　 = max(5, 対象期間の中央値半荘数 × 0.5)<br>
+              k　　　　 = 20（固定値）<br>
               <br>
-              【半荘数が75%到達局数未満の場合】<br>
+              【半荘数が「信頼度75%到達局数」の設定値未満の場合】<br>
               信頼度 = 半荘数 ÷ (半荘数 + k)<br>
               <br>
-              【75%到達局数 〜 100%到達局数の場合】<br>
-              信頼度 = 75% + (半荘数 − 75%到達局数) ÷ (100%到達局数 − 75%到達局数) × 25%<br>
+              【「信頼度75%到達局数」〜「信頼度100%到達局数」の設定値の場合】<br>
+              信頼度 = 75% + (半荘数 − 75%到達設定値) ÷ (100%到達設定値 − 75%到達設定値) × 25%<br>
               <br>
-              【100%到達局数以上の場合】<br>
-              信頼度 = 100%（固定）<br>
+              【「信頼度100%到達局数」の設定値以上の場合】<br>
+              信頼度 = 100%（上限）<br>
               <br>
               最終スコア = 信頼度 × 重み付きスコア + (1 − 信頼度) × 50
             </div>
             <p style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.7;">
-              例）中央値20局 → k=10。半荘5局のプレイヤーは信頼度33%、重み付き64.75点なら<br>
-              最終スコア = 0.33×64.75 + 0.67×50 = <span style="color:var(--gold);font-weight:700;">54.9点</span>（平均寄りに補正）<br>
-              半荘30局のプレイヤーは信頼度75%、同じ64.75点なら<br>
-              最終スコア = 0.75×64.75 + 0.25×50 = <span style="color:var(--gold);font-weight:700;">60.6点</span>（ほぼそのまま）
+              例）k=20固定。75%到達設定=20局・100%到達設定=50局・重み付きスコア64.75点の場合<br>
+              ・半荘5局（75%到達設定値未満）：信頼度 = 5÷(5+20) = 20%<br>
+              　最終スコア = 0.20×64.75 + 0.80×50 = <span style="color:var(--gold);font-weight:700;">52.9点</span>（平均寄りに補正）<br>
+              ・半荘20局（75%到達設定値に達した）：信頼度 = 75%<br>
+              　最終スコア = 0.75×64.75 + 0.25×50 = <span style="color:var(--gold);font-weight:700;">60.6点</span><br>
+              ・半荘35局（75%〜100%到達設定値の中間）：信頼度 = 75% + (35-20)÷(50-20)×25% = 87.5%<br>
+              　最終スコア = 0.875×64.75 + 0.125×50 = <span style="color:var(--gold);font-weight:700;">62.9点</span><br>
+              ・半荘50局以上（100%到達設定値に達した）：信頼度 = 100%（上限）<br>
+              　最終スコア = 1.0×64.75 + 0×50 = <span style="color:var(--gold);font-weight:700;">64.75点</span>（重み付きスコアそのまま）
             </p>
             <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
               <p style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px;">💡 最終スコアの上限について</p>
               <p style="font-size:11px;color:var(--soft);line-height:1.7;margin-bottom:8px;">
-                全指標で1位のプレイヤーでも、信頼補正により最終スコアは100になりません。半荘数が増えるほど信頼度が1.0に近づき、100点に近づきますが100になることはありません。<br>
-                逆に全指標で最下位でも、信頼補正により0点にはならず50点方向に引き寄せられます。
+                全指標で1位のプレイヤーでも、50局未満では信頼補正により最終スコアは100になりません。「信頼度100%到達局数」の設定値以上になると信頼度100%（上限）となり、重み付きスコアがそのまま最終スコアになります。<br>
+                逆に50局未満で全指標最下位でも、信頼補正により0点にはならず50点方向に引き寄せられます。
               </p>
               <div style="background:var(--card);border-radius:6px;padding:10px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--green);line-height:1.9;">
-                例）半荘30局・中央値20局 → 信頼度75%<br>
-                全指標1位　　：0.75 × 100 + 0.25 × 50 = <span style="color:var(--gold);font-weight:700;">87.5点</span><br>
-                全指標最下位：0.75 × 0　 + 0.25 × 50 = <span style="color:var(--gold);font-weight:700;">12.5点</span>
+                例）半荘30局・中央値24局 → 信頼度87.5%（75%到達=20局、100%到達=50局）<br>
+                全指標1位　　：0.875 × 100 + 0.125 × 50 = <span style="color:var(--gold);font-weight:700;">93.8点</span><br>
+                全指標最下位：0.875 × 0 + 0.125 × 50 = <span style="color:var(--gold);font-weight:700;">6.3点</span><br>
+                「信頼度100%到達局数」の設定値以上・全指標1位：信頼度100% → <span style="color:var(--gold);font-weight:700;">100点</span>（信頼度の上限）
               </div>
             </div>
           </div>
@@ -555,6 +561,14 @@ h1 em{color:var(--gold);font-style:normal;}
               <input type="number" class="weight-val" id="credT100" value="50" min="1" max="200" style="width:54px;" oninput="onCredInput()">
               <button class="weight-ud" onclick="adjustCred('t100',1)">▲</button>
               <span class="weight-pct">局</span>
+            </div>
+          </div>
+          <div class="weight-item">
+            <div class="weight-label">k値（到達前の補正強度）</div>
+            <div class="weight-input-row">
+              <button class="weight-ud" onclick="adjustCred('k',-1)">▼</button>
+              <input type="number" class="weight-val" id="credK" value="20" min="1" max="100" style="width:54px;" oninput="onCredInput()">
+              <button class="weight-ud" onclick="adjustCred('k',1)">▲</button>
             </div>
           </div>
         </div>
@@ -866,11 +880,12 @@ let EXCL_DAYS = 2;   // 救済条件：参加日数
 let EXCL_HANSO = 10; // 救済条件：半荘回数
 let CRED_T75  = 20;  // 信頼度75%到達局数
 let CRED_T100 = 50;  // 信頼度100%到達局数
+let CRED_K    = 20;  // 信頼補正k値（固定）
 
 // 動的信頼補正: k = max(5, 期間中央値 × 0.5)
 function calcCred(hanso, medianHanso) {
   if (hanso <= 0) return 0;
-  const k = Math.max(5, medianHanso * 0.5);
+  const k = CRED_K;  // 設定値
   if (hanso >= CRED_T100) return 1.0;
   if (hanso >= CRED_T75) {
     return 0.75 + (hanso - CRED_T75) / (CRED_T100 - CRED_T75) * 0.25;
@@ -1145,6 +1160,7 @@ function renderRanking() {
       <div class="rank-score-col">
         <div class="score-number" style="font-size:${isFinal?'26px':'20px'}">${sf.val}</div>
         <div class="score-label">${sf.dot?`<span class="cred-dot" style="background:${sf.dot}"></span>`:''}${sf.sub}</div>
+        ${!isFinal?'<div style="font-size:11px;color:var(--gold);font-family:DM Mono,monospace;margin-top:2px;">'+d.final.toFixed(1)+'</div>':''}
       </div>
       <div class="rank-detail">
         ${details.map(s=>`<div class="detail-stat">
@@ -1246,7 +1262,7 @@ function updateSummary() {
 // ════════════════════════════════════════════════
 // COMPARE
 // ════════════════════════════════════════════════
-const COLORS=['#f5c842','#42e8a0','#e84260','#a042e8','#4290e8','#e842a0'];
+const COLORS=['#f5c842','#42e8a0','#ff7043','#a042e8','#4290e8','#00bcd4'];
 
 function getCmpData() {
   return calcRatings(RAW, CUR_CMP_SEC);
@@ -1341,6 +1357,7 @@ function renderCompare() {
   const sel=SEL_PLAYERS.map(n=>all.find(d=>d.name===n)).filter(Boolean);
 
   const mconf=[
+    {key:'final',      label:'総合スコア',  fmt:v=>v.toFixed(1),                   range:[30,90]},
     {key:'elo',        label:'Elo rating',  fmt:v=>Math.round(v).toString(),       range:[1300,1700]},
     {key:'TOP率',      label:'TOP率',       fmt:v=>(v*100).toFixed(1)+'%',         range:[0,.5]},
     {key:'4着回避率',  label:'4着回避率',   fmt:v=>(v*100).toFixed(1)+'%',         range:[.5,1]},
@@ -1381,8 +1398,8 @@ function renderCompare() {
   const rm=[{key:'TOP率',mn:0,mx:.4},{key:'連対率',mn:0,mx:.75},{key:'4着回避率',mn:.5,mx:1},{key:'elo',mn:1300,mx:1700},{key:'Ave.Score',mn:-25,mx:30}];
   CMP_CHARTS.radar=new Chart(document.getElementById('radarC'),{type:'radar',data:{
     labels:['TOP率','連対率','4着\n回避率','Elo','平均Pt'],
-    datasets:sel.map((d,i)=>({label:d.name,data:rm.map(m=>Math.max(0,Math.min(10,(d[m.key]-m.mn)/(m.mx-m.mn)*10))),
-      borderColor:COLORS[i],backgroundColor:COLORS[i]+'22',pointBackgroundColor:COLORS[i],borderWidth:2,pointRadius:4}))
+    datasets:sel.map((d,i)=>{const ci=SEL_PLAYERS.indexOf(d.name);const c=COLORS[ci>=0?ci:i];return{label:d.name,data:rm.map(m=>Math.max(0,Math.min(10,(d[m.key]-m.mn)/(m.mx-m.mn)*10))),
+      borderColor:c,backgroundColor:c+'22',pointBackgroundColor:c,borderWidth:2,pointRadius:4};})
   },options:{responsive:true,maintainAspectRatio:false,
     scales:{r:{min:0,max:10,ticks:{stepSize:2,color:'#8888aa',font:{size:9}},grid:{color:'#2a2a40'},
       pointLabels:{color:'#e2e2f0',font:{size:11,family:'Noto Sans JP'}},angleLines:{color:'#2a2a40'}}},
@@ -1400,7 +1417,7 @@ function renderCompare() {
   CMP_CHARTS.score=new Chart(document.getElementById('scoreC'),{type:'bar',data:{
     labels:sel.map(d=>d.name),
     datasets:[{label:'合計スコア',data:sel.map(d=>d['Total Score']),
-      backgroundColor:sel.map((_,i)=>COLORS[i]+'bb'),borderColor:sel.map((_,i)=>COLORS[i]),borderWidth:2}]
+      backgroundColor:sel.map((d,i)=>{const ci=SEL_PLAYERS.indexOf(d.name);return COLORS[ci>=0?ci:i]+'bb';}),borderColor:sel.map((d,i)=>{const ci=SEL_PLAYERS.indexOf(d.name);return COLORS[ci>=0?ci:i];}),borderWidth:2}]
   },options:{responsive:true,maintainAspectRatio:false,
     scales:{x:{ticks:{color:'#e2e2f0',font:{family:'Noto Sans JP',size:11}},grid:{color:'#1a1a26'}},
       y:{ticks:{color:'#aaaacc'},grid:{color:'#2a2a40'}}},
@@ -1475,7 +1492,7 @@ function adjustExcl(type, delta) {
 }
 
 function adjustCred(type, delta) {
-  const ids = {t75:'credT75', t100:'credT100'};
+  const ids = {t75:'credT75', t100:'credT100', k:'credK'};
   const el = document.getElementById(ids[type]);
   el.value = Math.max(1, (parseInt(el.value)||0) + delta);
   onCredInput();
@@ -1484,19 +1501,22 @@ function adjustCred(type, delta) {
 function onCredInput() {
   const t75  = parseInt(document.getElementById('credT75').value)  || 20;
   const t100 = parseInt(document.getElementById('credT100').value) || 50;
+  const k    = parseInt(document.getElementById('credK').value)    || 20;
   const preview = document.getElementById('credPreview');
   if (t75 >= t100) {
     if (preview) preview.innerHTML = '<span style="color:var(--red)">⚠ 75%到達局数は100%到達局数より小さくしてください</span>';
     return;
   }
-  if (preview) preview.innerHTML = `現在の設定：<strong style="color:var(--gold)">${t75}局</strong>で信頼度75%、<strong style="color:var(--gold)">${t100}局以上</strong>で信頼度100%`;
+  if (preview) preview.innerHTML = `現在の設定：k値 <strong style="color:var(--gold)">${k}</strong>　<strong style="color:var(--gold)">${t75}局</strong>で信頼度75%　<strong style="color:var(--gold)">${t100}局以上</strong>で信頼度100%`;
 }
 
 function initCred() {
   const t75El  = document.getElementById('credT75');
   const t100El = document.getElementById('credT100');
+  const kEl    = document.getElementById('credK');
   if (t75El)  t75El.value  = CRED_T75;
   if (t100El) t100El.value = CRED_T100;
+  if (kEl)    kEl.value    = CRED_K;
   onCredInput();
 }
 
@@ -1662,7 +1682,9 @@ function switchTab(id) {
     EXCL_HANSO = parseInt(document.getElementById('exclHanso')?.value) || EXCL_HANSO;
     const _t75  = parseInt(document.getElementById('credT75')?.value);
     const _t100 = parseInt(document.getElementById('credT100')?.value);
+    const _k    = parseInt(document.getElementById('credK')?.value);
     if (_t75 && _t100 && _t75 < _t100) { CRED_T75 = _t75; CRED_T100 = _t100; }
+    if (_k && _k >= 1) { CRED_K = _k; }
     applyRankSection(CUR_RANK_SEC);
   }
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
