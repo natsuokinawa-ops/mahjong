@@ -2310,18 +2310,29 @@ function renderAffinity() {
   }).sort(function(a,b) { return b.avgRank - a.avgRank; });
 
   // テーブル描画
-  var ths = 'padding:5px 8px;text-align:center;color:var(--gold);font-size:11px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;';
-  var tds = 'padding:5px 8px;text-align:center;font-size:12px;border-bottom:1px solid var(--border);';
+  var ths = 'padding:4px 4px;text-align:center;color:var(--gold);font-size:11px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;';
+  var tds = 'padding:4px 4px;text-align:center;font-size:11px;border-bottom:1px solid var(--border);';
 
   var secLabel = sec === 'TOTAL' ? '全期間' : sec + '年';
   var html = '<div style="font-size:13px;color:var(--gold);font-weight:700;margin-bottom:12px;">'
     + target + ' の相性分析（' + secLabel + '・' + targetGames.length + '局）</div>';
 
-  html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:500px;">';
+  var colW = 'style="width:13%;"';
+  var colN = 'style="width:18%;"';
+  html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px;">';
+  html += '<colgroup>'
+    + '<col style="width:16%">'
+    + '<col style="width:14%">'
+    + '<col style="width:12%">'
+    + '<col style="width:14%">'
+    + '<col style="width:11%">'
+    + '<col style="width:11%">'
+    + '<col style="width:11%">'
+    + '</colgroup>';
   html += '<thead><tr>'
     + '<th style="' + ths + 'text-align:left;">相手</th>'
-    + '<th style="' + ths + '">総合スコア</th>'
-    + '<th style="' + ths + '">同卓回数</th>'
+    + '<th style="' + ths + '">総合</th>'
+    + '<th style="' + ths + '">同卓</th>'
     + '<th style="' + ths + '">平均着順</th>'
     + '<th style="' + ths + '">TOP率</th>'
     + '<th style="' + ths + '">連対率</th>'
