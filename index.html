@@ -112,7 +112,7 @@ h1 em{color:var(--gold);font-style:normal;}
 .score-label{font-size:10px;color:var(--soft);letter-spacing:.1em;margin-top:2px;font-family:'DM Mono',monospace;}
 .cred-dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:3px;vertical-align:middle;}
 .rank-detail{display:none;padding:14px 50px;background:var(--surface);border-top:1px solid var(--border);grid-column:1/-1;}
-.rank-item.expanded .rank-detail{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;}
+.rank-item.expanded .rank-detail{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
 .detail-stat-name{font-size:10px;color:var(--soft);letter-spacing:.15em;text-transform:uppercase;margin-bottom:3px;font-family:'DM Mono',monospace;}
 .detail-stat-val{font-size:17px;font-weight:700;color:var(--gold);}
 .detail-stat-unit{font-size:11px;font-weight:300;color:var(--soft);}
@@ -135,6 +135,7 @@ h1 em{color:var(--gold);font-style:normal;}
 
 /* ── Responsive (smartphone) ── */
 @media(max-width:640px){
+  .rank-item.expanded .rank-detail{grid-template-columns:repeat(3,1fr);gap:8px;}
   .wrap{padding:20px 14px 60px;}
   h1{font-size:32px;}
   header{flex-direction:column;gap:12px;}
@@ -286,10 +287,10 @@ h1 em{color:var(--gold);font-style:normal;}
 
   <div id="mainApp" style="display:none">
     <div class="tabs">
-      <button class="tab-btn active" data-tab="ranking">🏆 総合ランキング</button>
-      <button class="tab-btn" data-tab="compare">📊 プレイヤー比較</button>
+      <button class="tab-btn active" data-tab="ranking">🏆 Ranking</button>
       <button class="tab-btn" data-tab="affinity">🤝 相性分析</button>
-      <button class="tab-btn" data-tab="guide">📖 スコア算出方法</button>
+      <button class="tab-btn" data-tab="compare">⚔️ 雀士比較</button>
+      <button class="tab-btn" data-tab="guide">📖 算出基準</button>
       <button class="tab-btn" data-tab="settings">🛠️ 管理</button>
     </div>
 
@@ -317,10 +318,11 @@ h1 em{color:var(--gold);font-style:normal;}
           <button class="sort-btn active" data-sort="final">総合スコア</button>
           <button class="sort-btn" data-sort="elo">Elo rating</button>
           <button class="sort-btn" data-sort="TOP率">TOP率</button>
-          <button class="sort-btn" data-sort="4着回避率">4着回避</button>
+          <button class="sort-btn" data-sort="4着回避率">4着回避率</button>
           <button class="sort-btn" data-sort="Ave.Score">Ave.Score</button>
           <button class="sort-btn" data-sort="Total Score">TotalScore</button>
           <button class="sort-btn" data-sort="連対率">連対率</button>
+          <button class="sort-btn" data-sort="avgRank">平均着順</button>
         </div>
       </div>
       <div id="podium"></div>
@@ -1077,7 +1079,11 @@ function calcRatings(raw, section) {
     const c = calcCred(d['半荘']??0, median);
     const final = c*weighted + (1-c)*50;      // 補正あり
     const finalRaw = weighted;                  // 補正なし（信頼度100%）
-    return {name, ...d, elo, norms, weighted, cred:c, final, finalRaw};
+    const hanso = d['半荘']??0;
+    const avgRank = hanso > 0
+      ? ((d['TOP']??0)*1 + (d['2着']??0)*2 + (d['3着']??0)*3 + (d['4着']??0)*4) / hanso
+      : 0;
+    return {name, ...d, elo, norms, weighted, cred:c, final, finalRaw, avgRank};
   }
 
   // 除外判定: 総半荘数の閾値%未満 かつ 救済条件（日数・半荘）を満たさない
@@ -1230,7 +1236,8 @@ function renderPodium(sorted) {
 }
 
 function renderRanking() {
-  const sorted = [...RANKED].sort((a,b)=>b[CUR_SORT]-a[CUR_SORT]);
+  const asc = CUR_SORT === 'avgRank';
+  const sorted = [...RANKED].sort((a,b)=> asc ? a[CUR_SORT]-b[CUR_SORT] : b[CUR_SORT]-a[CUR_SORT]);
   const byFinal = [...RANKED].sort((a,b)=>b.final-a.final);
   const finalRank = Object.fromEntries(byFinal.map((d,i)=>[d.name,i+1]));
   if (CUR_SORT==='final') renderPodium(byFinal); else document.getElementById('podium').innerHTML='';
@@ -1243,6 +1250,7 @@ function renderRanking() {
     'Ave.Score':   d=>({val:(d['Ave.Score']>=0?'+':'')+d['Ave.Score'].toFixed(2)+'pt', sub:`総合 #${finalRank[d.name]}`}),
     'Total Score': d=>({val:(d['Total Score']>0?'+':'')+d['Total Score']+'pt',         sub:`総合 #${finalRank[d.name]}`}),
     '連対率':      d=>({val:(d['連対率']*100).toFixed(1)+'%',                          sub:`総合 #${finalRank[d.name]}`}),
+    'avgRank':     d=>({val:(d.avgRank??0).toFixed(2)+'位',                             sub:`総合 #${finalRank[d.name]}`}),
   };
 
   const list = document.getElementById('rankingList');
@@ -1252,20 +1260,21 @@ function renderRanking() {
     const medalCls = isFinal&&rank<=3?`rank-${rank}`:(finalRank[d.name]<=3?`rank-${finalRank[d.name]}`:'');
     const g=grade(d.final), sf=(scoreFmt[CUR_SORT]||scoreFmt['final'])(d);
     const bars=[
+      {label:'平均着順',val:(d.avgRank??0).toFixed(2)+'位',                                norm:(4-(d.avgRank??2.5))/3*100, color:'#ff7043'},
       {label:'TOP率',  val:((d['TOP率']??0)*100).toFixed(0)+'%',                            norm:d.norms['TOP率']??0,     color:'#42e8a0'},
       {label:'4着回避',val:((d['4着回避率']??0)*100).toFixed(0)+'%',                        norm:d.norms['4着回避率']??0, color:'#c882e8'},
       {label:'平均Pt', val:((d['Ave.Score']??0)>=0?'+':'')+(d['Ave.Score']??0).toFixed(1), norm:d.norms['Ave.Score']??0, color:'#f5c842'},
-      {label:'連対率', val:((d['連対率']??0)*100).toFixed(0)+'%',                           norm:d.norms['連対率']??0,    color:'#4290e8'},
     ];
     const details=[
+      {name:'半荘数',          val:(d['半荘']??'-')+'（'+(d['参加日数']??0)+'日）', unit:'', norm:null},
       {name:'Elo rating',      val:Math.round(d.elo).toString(),      unit:'',   norm:d.norms['Elo']},
+      {name:'平均着順',        val:(d.avgRank??0).toFixed(2),         unit:'位', norm:null},
       {name:'TOP率',           val:((d['TOP率']??0)*100).toFixed(1),  unit:'%',  norm:d.norms['TOP率']},
       {name:'4着回避率',       val:((d['4着回避率']??0)*100).toFixed(1), unit:'%', norm:d.norms['4着回避率']},
+      {name:'連対率',          val:((d['連対率']??0)*100).toFixed(1), unit:'%',  norm:d.norms['連対率']},
       {name:'平均スコア',      val:(d['Ave.Score']??0).toFixed(2),    unit:'pt', norm:d.norms['Ave.Score']},
       {name:'合計スコア',      val:d['Total Score']??'-',             unit:'pt', norm:d.norms['TotalScore']},
-      {name:'連対率',          val:((d['連対率']??0)*100).toFixed(1), unit:'%',  norm:d.norms['連対率']},
       {name:'信頼補正',        val:(d.cred*100).toFixed(0),           unit:'%',  norm:d.cred*100},
-      {name:'半荘数',          val:d['半荘']??'-',                    unit:'局', norm:null},
       {name:'役満',            val:d['役満']??0,                      unit:'回', norm:null},
       {name:'ヤキトリ',        val:d['ヤキトリ']??0,                  unit:'回', norm:null},
     ];
@@ -2210,7 +2219,7 @@ function initAffinityTab() {
       '<div style="color:var(--dim);font-size:13px;">Excelを読み込んでください</div>';
     return;
   }
-  if (!CUR_AFF_SEC) CUR_AFF_SEC = YEARS.length ? String(YEARS[0]) : 'TOTAL';
+  if (!CUR_AFF_SEC) CUR_AFF_SEC = 'TOTAL';
   buildAffinityPeriodBtns();
   buildAffinityPlayerBtns();
   if (CUR_AFF_PLAYER) renderAffinity();
@@ -2358,7 +2367,7 @@ function renderAffinity() {
     var affStr = (affVal >= 0 ? '+' : '') + affVal.toFixed(2);
     html += '<tr style="' + rowBg + '">'
       + '<td style="' + tds + 'text-align:left;font-weight:700;white-space:nowrap;">' + r.name + ' ' + scoreLabel + '</td>'
-      + '<td style="' + tds + 'color:var(--dim);">' + r.games + '局</td>'
+      + '<td style="' + tds + 'color:var(--dim);">' + r.games + '</td>'
       + '<td style="' + tds + 'font-weight:700;color:' + rankColor + ';">' + r.avgRank.toFixed(2) + '位</td>'
       + '<td style="' + tds + 'font-weight:700;color:' + affColor + ';">' + affStr + '</td>'
       + '<td style="' + tds + '">' + (r.topRate * 100).toFixed(1) + '%</td>'
