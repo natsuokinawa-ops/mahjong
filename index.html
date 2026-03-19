@@ -2310,28 +2310,24 @@ function renderAffinity() {
   }).sort(function(a,b) { return b.avgRank - a.avgRank; });
 
   // テーブル描画
-  var ths = 'padding:4px 4px;text-align:center;color:var(--gold);font-size:11px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;';
-  var tds = 'padding:4px 4px;text-align:center;font-size:11px;border-bottom:1px solid var(--border);';
+  var ths = 'padding:5px 6px;text-align:center;color:var(--gold);font-size:12px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;';
+  var tds = 'padding:5px 6px;text-align:center;font-size:13px;border-bottom:1px solid var(--border);';
 
   var secLabel = sec === 'TOTAL' ? '全期間' : sec + '年';
   var html = '<div style="font-size:13px;color:var(--gold);font-weight:700;margin-bottom:12px;">'
     + target + ' の相性分析（' + secLabel + '・' + targetGames.length + '局）</div>';
 
-  var colW = 'style="width:13%;"';
-  var colN = 'style="width:18%;"';
-  html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px;">';
+  html += '<table style="width:auto;border-collapse:collapse;table-layout:fixed;font-size:13px;">';
   html += '<colgroup>'
-    + '<col style="width:16%">'
-    + '<col style="width:14%">'
-    + '<col style="width:12%">'
-    + '<col style="width:14%">'
-    + '<col style="width:11%">'
-    + '<col style="width:11%">'
-    + '<col style="width:11%">'
+    + '<col style="width:130px">'
+    + '<col style="width:56px">'
+    + '<col style="width:76px">'
+    + '<col style="width:64px">'
+    + '<col style="width:64px">'
+    + '<col style="width:64px">'
     + '</colgroup>';
   html += '<thead><tr>'
     + '<th style="' + ths + 'text-align:left;">相手</th>'
-    + '<th style="' + ths + '">総合</th>'
     + '<th style="' + ths + '">同卓</th>'
     + '<th style="' + ths + '">平均着順</th>'
     + '<th style="' + ths + '">TOP率</th>'
@@ -2342,9 +2338,9 @@ function renderAffinity() {
   rows.forEach(function(r, i) {
     var rankColor = r.avgRank <= 2.0 ? 'var(--green)' : r.avgRank >= 3.0 ? 'var(--red)' : 'var(--text)';
     var rowBg = i % 2 === 0 ? 'background:var(--card);' : '';
+    var scoreLabel = r.score != null ? '<span style="font-size:10px;color:var(--dim);font-weight:400;">(' + r.score.toFixed(1) + ')</span>' : '';
     html += '<tr style="' + rowBg + '">'
-      + '<td style="' + tds + 'text-align:left;font-weight:700;">' + r.name + '</td>'
-      + '<td style="' + tds + 'color:var(--gold);">' + (r.score != null ? r.score.toFixed(1) : '—') + '</td>'
+      + '<td style="' + tds + 'text-align:left;font-weight:700;white-space:nowrap;">' + r.name + ' ' + scoreLabel + '</td>'
       + '<td style="' + tds + 'color:var(--dim);">' + r.games + '局</td>'
       + '<td style="' + tds + 'font-weight:700;color:' + rankColor + ';">' + r.avgRank.toFixed(2) + '位</td>'
       + '<td style="' + tds + '">' + (r.topRate * 100).toFixed(1) + '%</td>'
