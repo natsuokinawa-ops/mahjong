@@ -288,6 +288,7 @@ h1 em{color:var(--gold);font-style:normal;}
     <div class="tabs">
       <button class="tab-btn active" data-tab="ranking">🏆 総合ランキング</button>
       <button class="tab-btn" data-tab="compare">📊 プレイヤー比較</button>
+      <button class="tab-btn" data-tab="affinity">🤝 相性分析</button>
       <button class="tab-btn" data-tab="guide">📖 スコア算出方法</button>
       <button class="tab-btn" data-tab="settings">🛠️ 管理</button>
     </div>
@@ -348,6 +349,17 @@ h1 em{color:var(--gold);font-style:normal;}
         <div class="player-grid" id="playerGrid"></div>
       </div>
       <div id="compareContent"><div class="select-hint">↑ 上のボタンからプレイヤーを選んでください</div></div>
+    </div>
+
+
+    <!-- ═══ AFFINITY TAB ═══ -->
+    <div class="tab-pane" id="tab-affinity">
+      <div style="margin-bottom:16px;">
+        <div id="affinityPeriodSelector" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;"></div>
+        <div style="font-size:12px;color:var(--soft);margin-bottom:8px;">分析対象プレイヤーを選択</div>
+        <div id="affinityPlayerSelector" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;"></div>
+      </div>
+      <div id="affinityResult"></div>
     </div>
 
     <!-- ═══ GUIDE TAB ═══ -->
@@ -1182,6 +1194,7 @@ document.addEventListener('click', e => {
   if (pb) {
     if (pb.dataset.type === 'rank') applyRankSection(pb.dataset.section);
     else if (pb.dataset.type === 'cmp') applyCmpSection(pb.dataset.section);
+    else if (pb.dataset.type === 'aff') applyAffinitySection(pb.dataset.section);
     return;
   }
   const sb = e.target.closest('.sort-btn');
@@ -1808,6 +1821,7 @@ function switchTab(id) {
   }
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));
+  if (id === 'affinity') setTimeout(initAffinityTab, 0);
 }
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
@@ -2180,6 +2194,156 @@ function exportToExcel() {
   const now = new Date();
   const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
   XLSX.writeFile(wb, `麻雀成績_${dateStr}.xlsx`);
+}
+
+
+// ════════════════════════════════════════════════
+// AFFINITY (相性分析)
+// ════════════════════════════════════════════════
+
+var CUR_AFF_SEC = '';
+var CUR_AFF_PLAYER = '';
+
+function initAffinityTab() {
+  if (!Object.keys(RAW).length) {
+    document.getElementById('affinityResult').innerHTML =
+      '<div style="color:var(--dim);font-size:13px;">Excelを読み込んでください</div>';
+    return;
+  }
+  if (!CUR_AFF_SEC) CUR_AFF_SEC = YEARS.length ? String(YEARS[0]) : 'TOTAL';
+  buildAffinityPeriodBtns();
+  buildAffinityPlayerBtns();
+  if (CUR_AFF_PLAYER) renderAffinity();
+}
+
+function buildAffinityPeriodBtns() {
+  var el = document.getElementById('affinityPeriodSelector');
+  if (!el) return;
+  var secs = ['TOTAL', ...YEARS.slice()];
+  el.innerHTML = secs.map(function(s) {
+    var label = s === 'TOTAL' ? '全期間' : s + '年';
+    var active = s === CUR_AFF_SEC ? ' active' : '';
+    return '<button class="period-btn' + active + '" data-type="aff" data-section="' + s + '">' + label + '</button>';
+  }).join('');
+}
+
+function buildAffinityPlayerBtns() {
+  var el = document.getElementById('affinityPlayerSelector');
+  if (!el) return;
+  var names = Object.keys(RAW).sort();
+  el.innerHTML = names.map(function(name) {
+    var active = name === CUR_AFF_PLAYER ? ' style="background:var(--gold);color:#000;border-color:var(--gold);"' : '';
+    return '<button class="player-btn"' + active + ' onclick="selectAffinityPlayer(\'' +
+      name.replace(/'/g, "\\'") + '\')">' + name + '</button>';
+  }).join('');
+}
+
+function selectAffinityPlayer(name) {
+  CUR_AFF_PLAYER = name;
+  buildAffinityPlayerBtns();
+  renderAffinity();
+}
+
+function applyAffinitySection(sec) {
+  CUR_AFF_SEC = sec;
+  buildAffinityPeriodBtns();
+  if (CUR_AFF_PLAYER) renderAffinity();
+}
+
+function renderAffinity() {
+  var el = document.getElementById('affinityResult');
+  if (!el || !CUR_AFF_PLAYER) return;
+
+  var sec = CUR_AFF_SEC;
+  var target = CUR_AFF_PLAYER;
+
+  // 対象期間のゲームを抽出
+  var filteredGames = sec === 'TOTAL'
+    ? GAMES
+    : GAMES.filter(function(g) { return String(g.year) === String(sec); });
+
+  // targetが参加しているゲームのみ
+  var targetGames = filteredGames.filter(function(g) {
+    return g.players.some(function(p) { return p.name === target; });
+  });
+
+  if (!targetGames.length) {
+    el.innerHTML = '<div style="color:var(--dim);font-size:13px;">' + target + 'の対象期間データがありません</div>';
+    return;
+  }
+
+  // 相手ごとの集計
+  var stats = {}; // {name: {games, rankSum, top, ren, fourth}}
+  targetGames.forEach(function(g) {
+    var targetP = g.players.find(function(p) { return p.name === target; });
+    if (!targetP) return;
+    g.players.forEach(function(p) {
+      if (p.name === target) return;
+      if (!stats[p.name]) stats[p.name] = {games:0, rankSum:0, top:0, ren:0, fourth:0};
+      var s = stats[p.name];
+      s.games++;
+      s.rankSum += targetP.rank;
+      if (targetP.rank === 1) s.top++;
+      if (targetP.rank <= 2) s.ren++;
+      if (targetP.rank === 4) s.fourth++;
+    });
+  });
+
+  // 対象期間の全員のランキングを取得（総合スコア表示用）
+  var ratingResult = calcRatings(RAW, sec);
+  var allRated = (ratingResult.ranked || []).concat(ratingResult.unranked || []);
+  var scoreMap = {};
+  allRated.forEach(function(p) { scoreMap[p.name] = p.final; });
+
+  // 平均着順順にソート
+  var rows = Object.keys(stats).map(function(name) {
+    var s = stats[name];
+    return {
+      name: name,
+      games: s.games,
+      avgRank: s.rankSum / s.games,
+      topRate: s.top / s.games,
+      renRate: s.ren / s.games,
+      fourthRate: s.fourth / s.games,
+      score: scoreMap[name] != null ? scoreMap[name] : null,
+    };
+  }).sort(function(a,b) { return b.avgRank - a.avgRank; });
+
+  // テーブル描画
+  var ths = 'padding:5px 8px;text-align:center;color:var(--gold);font-size:11px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;';
+  var tds = 'padding:5px 8px;text-align:center;font-size:12px;border-bottom:1px solid var(--border);';
+
+  var secLabel = sec === 'TOTAL' ? '全期間' : sec + '年';
+  var html = '<div style="font-size:13px;color:var(--gold);font-weight:700;margin-bottom:12px;">'
+    + target + ' の相性分析（' + secLabel + '・' + targetGames.length + '局）</div>';
+
+  html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:500px;">';
+  html += '<thead><tr>'
+    + '<th style="' + ths + 'text-align:left;">相手</th>'
+    + '<th style="' + ths + '">総合スコア</th>'
+    + '<th style="' + ths + '">同卓回数</th>'
+    + '<th style="' + ths + '">平均着順</th>'
+    + '<th style="' + ths + '">TOP率</th>'
+    + '<th style="' + ths + '">連対率</th>'
+    + '<th style="' + ths + '">4着率</th>'
+    + '</tr></thead><tbody>';
+
+  rows.forEach(function(r, i) {
+    var rankColor = r.avgRank <= 2.0 ? 'var(--green)' : r.avgRank >= 3.0 ? 'var(--red)' : 'var(--text)';
+    var rowBg = i % 2 === 0 ? 'background:var(--card);' : '';
+    html += '<tr style="' + rowBg + '">'
+      + '<td style="' + tds + 'text-align:left;font-weight:700;">' + r.name + '</td>'
+      + '<td style="' + tds + 'color:var(--gold);">' + (r.score != null ? r.score.toFixed(1) : '—') + '</td>'
+      + '<td style="' + tds + 'color:var(--dim);">' + r.games + '局</td>'
+      + '<td style="' + tds + 'font-weight:700;color:' + rankColor + ';">' + r.avgRank.toFixed(2) + '位</td>'
+      + '<td style="' + tds + '">' + (r.topRate * 100).toFixed(1) + '%</td>'
+      + '<td style="' + tds + '">' + (r.renRate * 100).toFixed(1) + '%</td>'
+      + '<td style="' + tds + 'color:var(--red);">' + (r.fourthRate * 100).toFixed(1) + '%</td>'
+      + '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
 }
 
 
