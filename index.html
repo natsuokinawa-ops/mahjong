@@ -2295,33 +2295,46 @@ function renderAffinity() {
   var scoreMap = {};
   allRated.forEach(function(p) { scoreMap[p.name] = p.final; });
 
-  // 平均着順順にソート
+  // targetの全体平均着順を計算
+  var targetRankSum = 0, targetGameCount = 0;
+  targetGames.forEach(function(g) {
+    var p = g.players.find(function(p) { return p.name === target; });
+    if (p) { targetRankSum += p.rank; targetGameCount++; }
+  });
+  var targetAvgRank = targetGameCount > 0 ? targetRankSum / targetGameCount : 2.5;
+
+  // 相性スコア順にソート（苦手な順＝プラスが大きい順）
   var rows = Object.keys(stats).map(function(name) {
     var s = stats[name];
+    var avgRank = s.rankSum / s.games;
     return {
       name: name,
       games: s.games,
-      avgRank: s.rankSum / s.games,
+      avgRank: avgRank,
+      affinityScore: avgRank - targetAvgRank,
       topRate: s.top / s.games,
       renRate: s.ren / s.games,
       fourthRate: s.fourth / s.games,
       score: scoreMap[name] != null ? scoreMap[name] : null,
     };
-  }).sort(function(a,b) { return b.avgRank - a.avgRank; });
+  }).sort(function(a,b) { return b.affinityScore - a.affinityScore; });
 
   // テーブル描画
   var ths = 'padding:5px 6px;text-align:center;color:var(--gold);font-size:12px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;';
   var tds = 'padding:5px 6px;text-align:center;font-size:13px;border-bottom:1px solid var(--border);';
 
   var secLabel = sec === 'TOTAL' ? '全期間' : sec + '年';
-  var html = '<div style="font-size:13px;color:var(--gold);font-weight:700;margin-bottom:12px;">'
-    + target + ' の相性分析（' + secLabel + '・' + targetGames.length + '局）</div>';
+  var html = '<div style="font-size:13px;color:var(--gold);font-weight:700;margin-bottom:4px;">'
+    + target + ' の相性分析（' + secLabel + '・' + targetGames.length + '局）</div>'
+    + '<div style="font-size:11px;color:var(--soft);margin-bottom:12px;">全体平均着順 '
+    + targetAvgRank.toFixed(2) + '位｜相性スコア = 同卓時平均着順 − 全体平均着順（プラスが苦手・マイナスが得意）</div>';
 
   html += '<table style="width:auto;border-collapse:collapse;table-layout:fixed;font-size:13px;">';
   html += '<colgroup>'
     + '<col style="width:130px">'
     + '<col style="width:56px">'
     + '<col style="width:76px">'
+    + '<col style="width:72px">'
     + '<col style="width:64px">'
     + '<col style="width:64px">'
     + '<col style="width:64px">'
@@ -2330,6 +2343,7 @@ function renderAffinity() {
     + '<th style="' + ths + 'text-align:left;">相手</th>'
     + '<th style="' + ths + '">同卓</th>'
     + '<th style="' + ths + '">平均着順</th>'
+    + '<th style="' + ths + '">相性スコア</th>'
     + '<th style="' + ths + '">TOP率</th>'
     + '<th style="' + ths + '">連対率</th>'
     + '<th style="' + ths + '">4着率</th>'
@@ -2339,10 +2353,14 @@ function renderAffinity() {
     var rankColor = r.avgRank <= 2.0 ? 'var(--green)' : r.avgRank >= 3.0 ? 'var(--red)' : 'var(--text)';
     var rowBg = i % 2 === 0 ? 'background:var(--card);' : '';
     var scoreLabel = r.score != null ? '<span style="font-size:10px;color:var(--dim);font-weight:400;">(' + r.score.toFixed(1) + ')</span>' : '';
+    var affVal = r.affinityScore;
+    var affColor = affVal > 0.1 ? 'var(--red)' : affVal < -0.1 ? 'var(--green)' : 'var(--text)';
+    var affStr = (affVal >= 0 ? '+' : '') + affVal.toFixed(2);
     html += '<tr style="' + rowBg + '">'
       + '<td style="' + tds + 'text-align:left;font-weight:700;white-space:nowrap;">' + r.name + ' ' + scoreLabel + '</td>'
       + '<td style="' + tds + 'color:var(--dim);">' + r.games + '局</td>'
       + '<td style="' + tds + 'font-weight:700;color:' + rankColor + ';">' + r.avgRank.toFixed(2) + '位</td>'
+      + '<td style="' + tds + 'font-weight:700;color:' + affColor + ';">' + affStr + '</td>'
       + '<td style="' + tds + '">' + (r.topRate * 100).toFixed(1) + '%</td>'
       + '<td style="' + tds + '">' + (r.renRate * 100).toFixed(1) + '%</td>'
       + '<td style="' + tds + 'color:var(--red);">' + (r.fourthRate * 100).toFixed(1) + '%</td>'
