@@ -289,7 +289,7 @@ h1 em{color:var(--gold);font-style:normal;}
       <button class="tab-btn active" data-tab="ranking">🏆 総合ランキング</button>
       <button class="tab-btn" data-tab="compare">📊 プレイヤー比較</button>
       <button class="tab-btn" data-tab="guide">📖 スコア算出方法</button>
-      <button class="tab-btn" data-tab="settings">⚙️ スコア算出設定</button>
+      <button class="tab-btn" data-tab="settings">🛠️ 管理</button>
     </div>
 
     <!-- ═══ RANKING TAB ═══ -->
@@ -499,6 +499,12 @@ h1 em{color:var(--gold);font-style:normal;}
     <!-- ═══ SETTINGS TAB ═══ -->
     <div class="tab-pane" id="tab-settings">
       <div class="settings-box" style="margin-bottom:16px;">
+        <h3 style="margin-bottom:12px;">📥 データ出力</h3>
+        <p style="font-size:12px;color:var(--soft);margin-bottom:12px;line-height:1.6;">現在読み込んでいるデータをExcelファイルとして出力します。</p>
+        <button onclick="exportToExcel()" style="padding:10px 24px;background:var(--green);color:#000;font-weight:700;border:none;border-radius:8px;cursor:pointer;font-size:14px;margin-bottom:8px;">📥 Excel出力</button>
+      </div>
+
+      <div class="settings-box" style="margin-bottom:16px;">
         <h3>ランキング除外条件</h3>
         <p style="font-size:12px;color:var(--soft);margin-bottom:16px;line-height:1.6;">
           総半荘数に対する割合が閾値%未満のプレイヤーを除外します。<br>
@@ -664,16 +670,101 @@ function parseExcel(buffer) {
   }
 
   // ── ゲームデータ抽出 ──────────────────────────────
-  // 開催日ヘッダー行：C列=日付シリアル、D列=小さい連番
-  // ゲーム行：E列=1、C列はNone → 直前の開催日を引き継ぐ
+  // 開催日ヘッダー行：C列=日付シリアル、D列=小さい連番 or '第XX回'
+  // ゲーム行：E列=1（素点・順位あり）
+  // 付帯行：E列=0、値あり人数=4（ウマ・ヤキトリ・役満祝儀）
+  // 集計行：E列=0、値あり人数≠4 → 除外
   const games = [];
-  const daysByPlayerYear = {}; // {name: {year: Set<dateKey>}}
+  const daysByPlayerYear = {};
   let currentDateKey = null;
 
+  // ヤキトリパターン（ソート済み）
+  const YAKITORI_PATTERNS = [
+    [-15, 5, 5, 5],
+    [-15, -15, 15, 15],
+    [-15, -15, -15, 45],
+  ];
+  // 役満パターン（ソート済み）
+  const YAKUMAN_PATTERNS = [
+    [-20, -20, -20, 60],
+  ];
+  function matchPattern(vals, patterns) {
+    const sorted = vals.slice().sort((a,b)=>a-b);
+    return patterns.some(p => p.every((v,i)=>v===sorted[i]));
+  }
+
+  // 全行を走査
+  const pendingGame = { participants: [], year: null, date: null, extraRows: [] };
+
+  function flushGame() {
+    if (pendingGame.participants.length !== 4) { pendingGame.participants=[]; pendingGame.extraRows=[]; return; }
+
+    // 付帯行を処理（ウマ・ヤキトリ・役満祝儀）
+    let yakitori = {}; // name → count
+    let yakuman  = {}; // name → count
+    let extraScores = {}; // name → total extra
+
+    for (const row of pendingGame.extraRows) {
+      const names4 = pendingGame.participants.map(p=>p.name);
+      const vals4 = names4.map(n => row[n] ?? 0);
+      const valsFull = Object.values(row);
+
+      // 値がある人数が4人 → ウマ・ヤキトリ・役満祝儀候補
+      const nonZeroNames = names4.filter(n => row[n] != null && row[n] !== 0);
+      if (nonZeroNames.length !== 4) continue; // 集計行など→除外
+
+      // ヤキトリ判定
+      if (matchPattern(vals4, YAKITORI_PATTERNS)) {
+        names4.forEach(n => { if ((row[n]??0) === -15) yakitori[n] = (yakitori[n]||0) + 1; });
+      }
+      // 役満判定
+      if (matchPattern(vals4, YAKUMAN_PATTERNS)) {
+        names4.forEach(n => { if ((row[n]??0) === 60) yakuman[n] = (yakuman[n]||0) + 1; });
+      }
+      // 全付帯スコア加算
+      names4.forEach(n => { extraScores[n] = (extraScores[n]||0) + (row[n]??0); });
+    }
+
+    // 参加者のtotalスコアに付帯スコアを加算
+    const players = pendingGame.participants.map(p => ({
+      name:  p.name,
+      rank:  p.rank,
+      score: p.score + (extraScores[p.name]||0),
+      yakitori: yakitori[p.name]||0,
+      yakuman:  yakuman[p.name]||0,
+    }));
+
+    games.push({
+      year: pendingGame.year,
+      date: pendingGame.date,
+      players,
+      rawRows: [
+        pendingGame.participants.map(p=>({name:p.name,score:p.score,rank:p.rank})),
+        ...pendingGame.extraRows.map(row => {
+          const names4 = pendingGame.participants.map(p=>p.name);
+          const nonZeroNames = names4.filter(n => row[n] != null && row[n] !== 0);
+          if (nonZeroNames.length !== 4) return null; // 集計行除外
+          return names4.map(n=>({name:n,score:row[n]??0}));
+        }).filter(Boolean),
+      ],
+    });
+
+    // 参加日数記録
+    if (pendingGame.date) {
+      pendingGame.participants.forEach(p => {
+        const y = pendingGame.year;
+        if (!daysByPlayerYear[p.name]) daysByPlayerYear[p.name] = {};
+        if (!daysByPlayerYear[p.name][y]) daysByPlayerYear[p.name][y] = new Set();
+        daysByPlayerYear[p.name][y].add(pendingGame.date);
+      });
+    }
+
+    pendingGame.participants = [];
+    pendingGame.extraRows = [];
+  }
+
   for (let r = 100; r < 1500; r++) {
-    // 開催日ヘッダー行の検出
-    // 形式1: C列=日付シリアル/Date かつ D列='第XX回'（文字列）
-    // 形式2: C列=日付シリアル/Date かつ D列=小さい連番（1〜200）
+    // 開催日ヘッダー検出
     const cCell = ws[XLSX.utils.encode_cell({r, c:2})];
     if (cCell && cCell.v != null) {
       const cv2 = cCell.v;
@@ -683,12 +774,12 @@ function parseExcel(buffer) {
         const dCell = ws[XLSX.utils.encode_cell({r, c:3})];
         const dv = dCell ? dCell.v : null;
         const isHeader =
-          (typeof dv === 'string' && dv.includes('第')) ||  // '第XX回'
-          (typeof dv === 'number' && dv >= 1 && dv <= 200);    // 小さい連番
+          (typeof dv === 'string' && dv.includes('第')) ||
+          (typeof dv === 'number' && dv >= 1 && dv <= 200) ||
+          (typeof dv === 'number' && dv >= 2020 && dv <= 2100);
         if (isHeader) {
-          let dd;
-          if (isDateObj) { dd = cv2; }
-          else { dd = new Date(excelEpoch.getTime() + cv2*86400000); }
+          flushGame();
+          let dd = isDateObj ? cv2 : new Date(excelEpoch.getTime() + cv2*86400000);
           currentDateKey = `${dd.getFullYear()}-${dd.getMonth()+1}-${dd.getDate()}`;
         }
       }
@@ -696,35 +787,54 @@ function parseExcel(buffer) {
 
     const eVal = nv(r, 4);
     const dVal = nv(r, 3);
-    if (eVal !== 1 || !dVal || dVal < 2020 || dVal > 2100) continue;
-    const year = Math.floor(dVal);
 
-    const participants = [];
-    for (const [name, scoreCol] of Object.entries(playerCols)) {
-      const score = nv(r, scoreCol);
-      const rank  = nv(r, scoreCol + 1);
-      if (score !== null && rank !== null && rank >= 1 && rank <= 4) {
-        participants.push({name, score, rank});
-        // 参加日数記録
-        if (currentDateKey) {
-          if (!daysByPlayerYear[name]) daysByPlayerYear[name] = {};
-          if (!daysByPlayerYear[name][year]) daysByPlayerYear[name][year] = new Set();
-          daysByPlayerYear[name][year].add(currentDateKey);
+    if (eVal === 1 && dVal && dVal >= 2020 && dVal <= 2100) {
+      // 前の半荘を確定
+      flushGame();
+      const year = Math.floor(dVal);
+      pendingGame.year = year;
+      pendingGame.date = currentDateKey;
+      pendingGame.participants = [];
+      pendingGame.extraRows = [];
+
+      for (const [name, scoreCol] of Object.entries(playerCols)) {
+        const score = nv(r, scoreCol);
+        const rank  = nv(r, scoreCol + 1);
+        if (score !== null && rank !== null && rank >= 1 && rank <= 4) {
+          pendingGame.participants.push({name, score, rank});
         }
       }
+    } else if (eVal === 0 && pendingGame.participants.length === 4) {
+      // 付帯行（ウマ・ヤキトリ等）の収集
+      const rowScores = {};
+      for (const [name, scoreCol] of Object.entries(playerCols)) {
+        const v = nv(r, scoreCol);
+        if (v !== null && v !== 0) rowScores[name] = v;
+      }
+      const nonZeroCount = Object.keys(rowScores).length;
+      if (nonZeroCount === 0) {
+        // 空行 → 無視
+      } else if (nonZeroCount === 4) {
+        // 4人ちょうど → ウマ・ヤキトリ・役満祝儀候補
+        pendingGame.extraRows.push(rowScores);
+      } else {
+        // 4人以外（開催日集計行・役満祝儀集計等）→ 半荘を確定して除外
+        flushGame();
+      }
     }
-    if (participants.length === 4) games.push({year, players: participants});
   }
+  flushGame(); // 最後の半荘
 
-  // ── ゲームデータから集計を自前で計算 ────────────────
-  // yearStats[year][name] = {hanso, total, top, s2nd, s3rd, s4th}
+
+    // ── ゲームデータから集計を自前で計算 ────────────────
+  // yearStats[year][name] = {hanso, total, top, s2nd, s3rd, s4th, yakitori, yakuman}
   const yearStats = {};
   for (const game of games) {
     const y = String(game.year);
     if (!yearStats[y]) yearStats[y] = {};
     for (const p of game.players) {
       const n = p.name;
-      if (!yearStats[y][n]) yearStats[y][n] = {hanso:0, total:0, top:0, s2nd:0, s3rd:0, s4th:0};
+      if (!yearStats[y][n]) yearStats[y][n] = {hanso:0,total:0,top:0,s2nd:0,s3rd:0,s4th:0,yakitori:0,yakuman:0};
       const s = yearStats[y][n];
       s.hanso++;
       s.total += p.score;
@@ -732,6 +842,8 @@ function parseExcel(buffer) {
       else if (p.rank===2) s.s2nd++;
       else if (p.rank===3) s.s3rd++;
       else if (p.rank===4) s.s4th++;
+      s.yakitori += p.yakitori||0;
+      s.yakuman  += p.yakuman||0;
     }
   }
 
@@ -740,14 +852,16 @@ function parseExcel(buffer) {
   for (const [y, ydata] of Object.entries(yearStats)) {
     if (y === 'TOTAL') continue;
     for (const [name, s] of Object.entries(ydata)) {
-      if (!yearStats['TOTAL'][name]) yearStats['TOTAL'][name] = {hanso:0, total:0, top:0, s2nd:0, s3rd:0, s4th:0};
+      if (!yearStats['TOTAL'][name]) yearStats['TOTAL'][name] = {hanso:0,total:0,top:0,s2nd:0,s3rd:0,s4th:0,yakitori:0,yakuman:0};
       const t = yearStats['TOTAL'][name];
-      t.hanso += s.hanso; t.total += s.total;
-      t.top += s.top; t.s2nd += s.s2nd; t.s3rd += s.s3rd; t.s4th += s.s4th;
+      t.hanso+=s.hanso; t.total+=s.total;
+      t.top+=s.top; t.s2nd+=s.s2nd; t.s3rd+=s.s3rd; t.s4th+=s.s4th;
+      t.yakitori+=s.yakitori; t.yakuman+=s.yakuman;
     }
   }
 
-  // ── players オブジェクト構築 ─────────────────────────
+
+    // ── players オブジェクト構築 ─────────────────────────
   const players = {};
   const allYears = Object.keys(yearStats).filter(y => y !== 'TOTAL');
 
@@ -794,14 +908,16 @@ function parseExcel(buffer) {
         '連対率':      renR,
         '4着回避率':   avoidR,
         'Rank Rating': 0,
-        '役満':        0,
+        '役満':        s.yakuman||0,
+        'ヤキトリ':    s.yakitori||0,
       };
     }
     if (!Object.keys(players[name]).length) delete players[name];
   }
 
   const years = allYears.sort().reverse();
-  return { players, years, lastDate, games };
+  const playerOrder = Object.keys(playerCols);
+  return { players, years, lastDate, games, playerOrder };
 }
 
 
@@ -972,7 +1088,7 @@ function calcRatings(raw, section) {
 // ════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════
-var RAW={}, YEARS=[], GAMES=[], RANKED=[], UNRANKED=[];
+var RAW={}, YEARS=[], GAMES=[], RANKED=[], UNRANKED=[], PLAYER_ORDER=[];
 var CUR_RANK_SEC='', CUR_CMP_SEC='', CUR_SORT='final';
 let SEL_PLAYERS=[], CMP_CHARTS={}, CMP_SHOW_UNRANKED=false;
 
@@ -993,7 +1109,7 @@ function loadFile(file) {
     try {
       const buf = new Uint8Array(e.target.result);
       const parsed = parseExcel(buf);
-      RAW = parsed.players; YEARS = parsed.years; GAMES = parsed.games || [];
+      RAW = parsed.players; YEARS = parsed.years; GAMES = parsed.games || []; PLAYER_ORDER = parsed.playerOrder || Object.keys(RAW);
       // Elo計算（全期間・反復収束）
       ELO_RATINGS = calcElo(GAMES);
       buildGMM(RAW);
@@ -1138,6 +1254,7 @@ function renderRanking() {
       {name:'信頼補正',        val:(d.cred*100).toFixed(0),           unit:'%',  norm:d.cred*100},
       {name:'半荘数',          val:d['半荘']??'-',                    unit:'局', norm:null},
       {name:'役満',            val:d['役満']??0,                      unit:'回', norm:null},
+      {name:'ヤキトリ',        val:d['ヤキトリ']??0,                  unit:'回', norm:null},
     ];
     const el=document.createElement('div');
     el.className=`rank-item${medalCls?' '+medalCls:''}`;
@@ -1365,6 +1482,8 @@ function renderCompare() {
     {key:'Total Score',label:'TotalScore',  fmt:v=>(v>0?'+':'')+v,                 range:null},
     {key:'連対率',     label:'連対率',      fmt:v=>(v*100).toFixed(1)+'%',         range:[0,.8]},
     {key:'半荘',       label:'半荘数',      fmt:v=>v+'局',                         range:null},
+    {key:'役満',       label:'役満',        fmt:v=>v+'回',                         range:null},
+    {key:'ヤキトリ',   label:'ヤキトリ',    fmt:v=>v+'回',                         range:null},
   ];
   function nr(v,c){
     if(!c.range){const vals=sel.map(d=>d[c.key]),mn=Math.min(...vals),mx=Math.max(...vals);return mx===mn?50:(v-mn)/(mx-mn)*100;}
@@ -1779,6 +1898,7 @@ async function publishToGitHub() {
       players: RAW,
       years: YEARS,
       games: GAMES,
+      playerOrder: PLAYER_ORDER,
       weights: WEIGHTS,
       lastDate: lastDate
     });
@@ -1859,6 +1979,208 @@ function saveAndPublish() {
 }
 
 
+
+
+// ════════════════════════════════════════════════
+// EXCEL EXPORT
+// ════════════════════════════════════════════════
+
+function exportToExcel() {
+  if (!Object.keys(RAW).length) { alert('先にExcelファイルを読み込んでください'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  // ── ① ランキングシート生成 ─────────────────────
+  function makeRankingSheet(section, sheetName) {
+    const result = calcRatings(RAW, section);
+    const ranked   = (result.ranked   || []).slice().sort((a,b) => b.final - a.final);
+    const unranked = (result.unranked || []).slice().sort((a,b) => (b.finalRaw||0) - (a.finalRaw||0));
+
+    const header = ['順位','プレイヤー','総合スコア','信頼度%','Elo rating',
+                    'TOP率%','4着回避率%','Ave.Score','TotalScore','連対率%','半荘数','参加日数'];
+    const rows = [header];
+
+    const pushRow = (rank, d) => {
+      const sec = section;
+      const pData = RAW[d.name] && RAW[d.name][sec] ? RAW[d.name][sec] : {};
+      rows.push([
+        rank,
+        d.name,
+        Math.round(d.final * 10) / 10,
+        Math.round(d.cred * 1000) / 10 + '%',
+        Math.round(d.elo),
+        Math.round((d['TOP率']      ?? 0) * 1000) / 10 + '%',
+        Math.round((d['4着回避率']  ?? 0) * 1000) / 10 + '%',
+        Math.round((d['Ave.Score']  ?? 0) * 100)  / 100,
+        d['Total Score'] ?? 0,
+        Math.round((d['連対率']     ?? 0) * 1000) / 10 + '%',
+        d['半荘'] ?? 0,
+        pData['参加日数'] ?? 0,
+      ]);
+    };
+
+    ranked.forEach((d, i) => pushRow(i + 1, d));
+    if (unranked.length) {
+      rows.push(['--- 参加数不足（参考値）---']);
+      unranked.forEach(d => pushRow('参考', d));
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [
+      {wch:6},{wch:14},{wch:10},{wch:8},{wch:10},
+      {wch:8},{wch:10},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8}
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  }
+
+  // ── ② 集計データシート ────────────────────────
+  function makeSummarySheet() {
+    const names = Object.keys(RAW).sort();
+    const allSecs = ['TOTAL', ...YEARS.slice().reverse()];
+    const statDefs = [
+      {key:'参加日数',  label:'参加日数',   pct:false},
+      {key:'半荘',      label:'半荘数',     pct:false},
+      {key:'Total Score',label:'合計スコア',pct:false},
+      {key:'Ave.Score', label:'平均スコア', pct:false},
+      {key:'TOP',       label:'TOP',        pct:false},
+      {key:'2着',       label:'2着',        pct:false},
+      {key:'3着',       label:'3着',        pct:false},
+      {key:'4着',       label:'4着',        pct:false},
+      {key:'TOP率',     label:'TOP率',      pct:true},
+      {key:'連対率',    label:'連対率',     pct:true},
+      {key:'4着回避率', label:'4着回避率',  pct:true},
+      {key:'役満',      label:'役満',       pct:false},
+      {key:'ヤキトリ',  label:'ヤキトリ',   pct:false},
+    ];
+
+    const rows = [];
+    // ヘッダー行：プレイヤー名
+    const hdr = ['期間', '指標', ...names];
+    rows.push(hdr);
+
+    allSecs.forEach(sec => {
+      const secLabel = sec === 'TOTAL' ? '全期間' : sec + '年';
+      statDefs.forEach((def, ki) => {
+        const row = [ki === 0 ? secLabel : '', def.label];
+        names.forEach(n => {
+          const d = RAW[n] && RAW[n][sec] ? RAW[n][sec] : null;
+          if (!d) { row.push(''); return; }
+          let val = d[def.key] ?? '';
+          if (typeof val === 'number') {
+            if (def.pct) {
+              val = Math.round(val * 1000) / 10 + '%';
+            } else if (def.key === 'Ave.Score' || def.key === 'Total Score') {
+              val = Math.round(val * 100) / 100;
+            }
+          }
+          row.push(val);
+        });
+        rows.push(row);
+      });
+      rows.push([]); // 区切り空行
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const colWidths = [{wch:8},{wch:12}];
+    names.forEach(() => colWidths.push({wch:12}));
+    ws['!cols'] = colWidths;
+    XLSX.utils.book_append_sheet(wb, ws, '集計データ');
+  }
+
+  // ── 対戦データシート（元のExcelレイアウト形式） ──
+  function makeGamesSheet() {
+    const playerList = PLAYER_ORDER.length ? PLAYER_ORDER : Object.keys(RAW);
+
+    // 開催日ごとにゲームをグループ化
+    const dayGroups = [];
+    let curDate = null, curYear = null, curGames = [];
+    GAMES.forEach(g => {
+      if (g.date !== curDate) {
+        if (curGames.length) dayGroups.push({date:curDate, year:curYear, games:curGames});
+        curDate=g.date; curYear=g.year; curGames=[];
+      }
+      curGames.push(g);
+    });
+    if (curGames.length) dayGroups.push({date:curDate, year:curYear, games:curGames});
+
+    const rows = [];
+
+    // ヘッダー行1: プレイヤー名
+    const hdr1 = ['', '', ''];
+    playerList.forEach(n => { hdr1.push(n); hdr1.push(''); });
+    rows.push(hdr1);
+
+    // ヘッダー行2: スコア/順位
+    const hdr2 = ['', '', ''];
+    playerList.forEach(() => { hdr2.push('スコア'); hdr2.push('順位'); });
+    rows.push(hdr2);
+
+    // 各開催日グループ
+    dayGroups.forEach((grp, gi) => {
+      // 開催日ヘッダー行
+      const dateRow = [grp.date||'', `第${dayGroups.length-gi}回`, ''];
+      playerList.forEach(() => { dateRow.push(''); dateRow.push(''); });
+      rows.push(dateRow);
+
+      // 各半荘のrawRowsを出力
+      grp.games.forEach(g => {
+        if (!g.rawRows) return;
+        g.rawRows.forEach((rowData, ri) => {
+          const isMainRow = ri === 0;
+          // E列相当
+          const eVal = isMainRow ? 1 : 0;
+          const row = [grp.year, eVal, ''];
+          // scoreMapを構築
+          const scoreMap = {};
+          const rankMap  = {};
+          rowData.forEach(p => {
+            scoreMap[p.name] = p.score;
+            if (p.rank) rankMap[p.name] = p.rank;
+          });
+          playerList.forEach(n => {
+            const s = scoreMap[n];
+            const rk = rankMap[n];
+            row.push(s != null ? s : '');       // +なし、数値のみ
+            row.push(rk != null ? rk : '');
+          });
+          rows.push(row);
+        });
+      });
+
+      // 集計行
+      const sumRow = [grp.year, '0', ''];
+      playerList.forEach(n => {
+        const total = grp.games.reduce((s, g) => {
+          const p = g.players.find(p => p.name === n);
+          return s + (p ? p.score : 0);
+        }, 0);
+        const participated = grp.games.some(g => g.players.some(p => p.name === n));
+        sumRow.push(participated ? total : '');
+        sumRow.push('');
+      });
+      rows.push(sumRow);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:12},{wch:4},{wch:4}];
+    playerList.forEach(() => { ws['!cols'].push({wch:8}); ws['!cols'].push({wch:4}); });
+    XLSX.utils.book_append_sheet(wb, ws, '対戦データ');
+  }
+
+
+
+  // ── シートをシート順に追加 ────────────────────
+  // 順序：集計データ → 全期間 → 年別（新→旧） → 対戦データ
+  makeGamesSheet();
+  makeSummarySheet();
+  makeRankingSheet('TOTAL', '全期間');
+  YEARS.slice().reverse().forEach(y => makeRankingSheet(String(y), y + '年'));
+
+  // ダウンロード
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `麻雀成績_${dateStr}.xlsx`);
+}
 
 
 // ════════════════════════════════════════════════
