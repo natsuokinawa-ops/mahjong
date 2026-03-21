@@ -1925,6 +1925,19 @@ async function publishToGitHub() {
     var lastDate = document.getElementById("dataDateLabel").textContent
       .replace("\uD83D\uDCC5 \u6700\u7D42\u5B9F\u65BD\u65E5\uFF1A", "").trim();
 
+    // 公開前にUIから最新の設定値を読み取る
+    var _ep = parseInt(document.getElementById('exclPct')?.value);   if (_ep != null && !isNaN(_ep)) EXCL_PCT   = _ep;
+    var _ed = parseInt(document.getElementById('exclDays')?.value);  if (_ed != null && !isNaN(_ed)) EXCL_DAYS  = _ed;
+    var _eh = parseInt(document.getElementById('exclHanso')?.value); if (_eh != null && !isNaN(_eh)) EXCL_HANSO = _eh;
+    var _t75  = parseInt(document.getElementById('credT75')?.value);  if (_t75  != null && !isNaN(_t75))  CRED_T75  = _t75;
+    var _t100 = parseInt(document.getElementById('credT100')?.value); if (_t100 != null && !isNaN(_t100)) CRED_T100 = _t100;
+    var _ck   = parseInt(document.getElementById('credK')?.value);   if (_ck   != null && !isNaN(_ck))   CRED_K    = _ck;
+    // 重みもUIから読み取る
+    METRIC_ORDER.forEach(function(m) {
+      var el = document.getElementById('w_' + m);
+      if (el) { var v = parseInt(el.value); if (!isNaN(v)) WEIGHTS[m] = v; }
+    });
+
     // data.json だけをアップロード（HTMLは変更しない）
     var dataJson = JSON.stringify({
       players: RAW,
