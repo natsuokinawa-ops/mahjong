@@ -1932,7 +1932,15 @@ async function publishToGitHub() {
       games: GAMES,
       playerOrder: PLAYER_ORDER,
       weights: WEIGHTS,
-      lastDate: lastDate
+      lastDate: lastDate,
+      settings: {
+        exclPct:   EXCL_PCT,
+        exclDays:  EXCL_DAYS,
+        exclHanso: EXCL_HANSO,
+        credT75:   CRED_T75,
+        credT100:  CRED_T100,
+        credK:     CRED_K
+      }
     });
     var dataPath = cfg.path.replace(/[^/]*$/, "") + "data.json";
     await uploadFile(cfg, dataPath, dataJson, "\uD83D\uDCCA \u30C7\u30FC\u30BF\u66F4\u65B0 " + lastDate);
@@ -2521,7 +2529,16 @@ function renderAffinity() {
       RAW   = d.players || {};
       YEARS = d.years   || [];
       GAMES = d.games   || [];
+      PLAYER_ORDER = d.playerOrder || Object.keys(RAW);
       if (d.weights) WEIGHTS = d.weights;
+      if (d.settings) {
+        if (d.settings.exclPct   != null) EXCL_PCT   = d.settings.exclPct;
+        if (d.settings.exclDays  != null) EXCL_DAYS  = d.settings.exclDays;
+        if (d.settings.exclHanso != null) EXCL_HANSO = d.settings.exclHanso;
+        if (d.settings.credT75   != null) CRED_T75   = d.settings.credT75;
+        if (d.settings.credT100  != null) CRED_T100  = d.settings.credT100;
+        if (d.settings.credK     != null) CRED_K     = d.settings.credK;
+      }
       document.getElementById('uploadZone').style.display = 'none';
       document.getElementById('noDataMsg').style.display  = 'none';
       document.getElementById('mainApp').style.display    = 'block';
