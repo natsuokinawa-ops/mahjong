@@ -537,7 +537,7 @@ h1 em{color:var(--gold);font-style:normal;}
             <div class="weight-label">閾値（総半荘数に対する%）</div>
             <div class="weight-input-row">
               <button class="weight-ud" onclick="adjustExcl('pct',-1)">▼</button>
-              <input type="number" class="weight-val" id="exclPct" value="3" min="0" max="50" style="width:54px;" oninput="onExclInput()">
+              <input type="number" class="weight-val" id="exclPct" value="2" min="0" max="50" style="width:54px;" oninput="onExclInput()">
               <button class="weight-ud" onclick="adjustExcl('pct',1)">▲</button>
               <span class="weight-pct">%</span>
             </div>
@@ -546,7 +546,7 @@ h1 em{color:var(--gold);font-style:normal;}
             <div class="weight-label">救済条件：参加日数</div>
             <div class="weight-input-row">
               <button class="weight-ud" onclick="adjustExcl('days',-1)">▼</button>
-              <input type="number" class="weight-val" id="exclDays" value="2" min="0" max="30" style="width:54px;" oninput="onExclInput()">
+              <input type="number" class="weight-val" id="exclDays" value="3" min="0" max="30" style="width:54px;" oninput="onExclInput()">
               <button class="weight-ud" onclick="adjustExcl('days',1)">▲</button>
               <span class="weight-pct">日以上</span>
             </div>
@@ -1013,8 +1013,8 @@ function normG(val, m) {
 }
 
 // 除外条件（変更可能）
-let EXCL_PCT  = 3;   // 総半荘数に対する閾値%
-let EXCL_DAYS = 2;   // 救済条件：参加日数
+let EXCL_PCT  = 2;   // 総半荘数に対する閾値%
+let EXCL_DAYS = 3;   // 救済条件：参加日数
 let EXCL_HANSO = 10; // 救済条件：半荘回数
 let CRED_T75  = 20;  // 信頼度75%到達局数
 let CRED_T100 = 50;  // 信頼度100%到達局数
@@ -1136,6 +1136,8 @@ function loadFile(file) {
       const buf = new Uint8Array(e.target.result);
       const parsed = parseExcel(buf);
       RAW = parsed.players; YEARS = parsed.years; GAMES = parsed.games || []; PLAYER_ORDER = parsed.playerOrder || Object.keys(RAW);
+      // localStorageから設定を復元（Excelを読み込んでも設定を維持）
+      loadSettingsFromLocal();
       // Elo計算（全期間・反復収束）
       ELO_RATINGS = calcElo(GAMES);
       buildGMM(RAW);
@@ -1835,6 +1837,7 @@ function switchTab(id) {
     const _k    = parseInt(document.getElementById('credK')?.value);
     if (_t75 && _t100 && _t75 < _t100) { CRED_T75 = _t75; CRED_T100 = _t100; }
     if (_k && _k >= 1) { CRED_K = _k; }
+    saveSettingsToLocal();
     applyRankSection(CUR_RANK_SEC);
   }
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
@@ -2476,6 +2479,43 @@ function renderAffinity() {
 
   html += '</tbody></table></div>';
   el.innerHTML = html;
+}
+
+
+// ════════════════════════════════════════════════
+// SETTINGS PERSISTENCE (localStorage)
+// ════════════════════════════════════════════════
+const SETTINGS_KEY = 'mahjong_ranking_settings';
+
+function saveSettingsToLocal() {
+  try {
+    var s = {
+      exclPct:   EXCL_PCT,
+      exclDays:  EXCL_DAYS,
+      exclHanso: EXCL_HANSO,
+      credT75:   CRED_T75,
+      credT100:  CRED_T100,
+      credK:     CRED_K,
+      weights:   Object.assign({}, WEIGHTS)
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  } catch(e) {}
+}
+
+function loadSettingsFromLocal() {
+  try {
+    var raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return false;
+    var s = JSON.parse(raw);
+    if (s.exclPct   != null) EXCL_PCT   = s.exclPct;
+    if (s.exclDays  != null) EXCL_DAYS  = s.exclDays;
+    if (s.exclHanso != null) EXCL_HANSO = s.exclHanso;
+    if (s.credT75   != null) CRED_T75   = s.credT75;
+    if (s.credT100  != null) CRED_T100  = s.credT100;
+    if (s.credK     != null) CRED_K     = s.credK;
+    if (s.weights)   WEIGHTS = Object.assign({}, WEIGHTS, s.weights);
+    return true;
+  } catch(e) { return false; }
 }
 
 
