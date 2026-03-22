@@ -2248,6 +2248,19 @@ var CUR_AFF_SEC = '';
 var CUR_AFF_PLAYER = '';
 var AFF_MIN_GAMES = 10;  // 最低同卓回数（0=全て表示）
 var AFF_EXCLUDE_MIN = false;  // 10局未満を除外するか
+var AFF_SORT_KEY = 'affinityScore';  // 相性分析のソートキー
+var AFF_SORT_ASC = false;  // true=昇順（▲得意順）、false=降順（▼苦手順）
+
+function setAffSort(key) {
+  if (AFF_SORT_KEY === key) {
+    AFF_SORT_ASC = !AFF_SORT_ASC;  // 同じ列なら昇降切り替え
+  } else {
+    AFF_SORT_KEY = key;
+    // 回数・4着回避率は昇順がデフォルト、他は降順
+    AFF_SORT_ASC = (key === 'games' || key === 'avgRank' || key === 'fourthRate');
+  }
+  if (CUR_AFF_PLAYER) renderAffinity();
+}
 
 function toggleAffinityMin() {
   AFF_EXCLUDE_MIN = !AFF_EXCLUDE_MIN;
@@ -2409,11 +2422,22 @@ function renderAffinity() {
       fourthRate: s.fourth / s.games,
       score: scoreMap[name] != null ? scoreMap[name] : null,
     };
-  }).sort(function(a,b) { return b.affinityScore - a.affinityScore; })
-  .filter(function(r) { return !AFF_EXCLUDE_MIN || r.games >= AFF_MIN_GAMES; });
+    })
+  .filter(function(r) { return !AFF_EXCLUDE_MIN || r.games >= AFF_MIN_GAMES; })
+  .sort(function(a,b) {
+    var v = a[AFF_SORT_KEY] - b[AFF_SORT_KEY];
+    return AFF_SORT_ASC ? v : -v;
+  });
 
   // テーブル描画
-  var ths = 'padding:5px 6px;text-align:center;color:var(--gold);font-size:12px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;';
+  var ths  = 'padding:5px 6px;text-align:center;color:var(--gold);font-size:12px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;';
+  var thsc = 'padding:5px 6px;text-align:center;font-size:12px;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;';
+  function thSort(key, label, asc) {
+    var isActive = AFF_SORT_KEY === key;
+    var arrow = isActive ? (AFF_SORT_ASC ? ' ↑' : ' ↓') : '';
+    var col = isActive ? 'var(--gold)' : 'var(--soft)';
+    return '<th style="' + thsc + 'color:' + col + ';" onclick="setAffSort(\'' + key + '\')">' + label + arrow + '</th>';
+  }
   var tds = 'padding:5px 6px;text-align:center;font-size:13px;border-bottom:1px solid var(--border);';
 
   var secLabel = sec === 'TOTAL' ? '全期間' : sec + '年';
@@ -2423,7 +2447,7 @@ function renderAffinity() {
     + '全体平均着順 ' + targetAvgRank.toFixed(2) + '位 / 全体Ave.Score ' + (targetAvgScore >= 0 ? '+' : '') + targetAvgScore.toFixed(1) + 'pt<br>'
     + '<span style="color:var(--gold)">■ 相性スコア</span>：同卓時平均着順 − 相手3人の実力から導く期待着順。実力差を考慮した純粋な相性指数<br>'
     + '<span style="color:var(--gold)">■ 着順差</span>：同卓時平均着順 − 自分の全体平均着順。シンプルな着順への影響<br>'
-    + '<span style="color:var(--gold)">■ スコア影響</span>：同卓時Ave.Score − 自分の全体Ave.Score。スコアへの影響（プラスが得・マイナスが損）<br>'
+    + '<span style="color:var(--gold)">■ スコア影響</span>：同卓時Ave.Score − 自分の全体Ave.Score。スコアへの影響（プラスが得意・マイナスが苦手）<br>'
     + '※ 相性スコア・着順差は ▼（着順が下がる＝苦手） ▲（着順が上がる＝得意）'
     + '</div>';
 
@@ -2441,14 +2465,14 @@ function renderAffinity() {
     + '</colgroup>';
   html += '<thead><tr>'
     + '<th style="' + ths + 'text-align:left;">対戦相手</th>'
-    + '<th style="' + ths + '">回数</th>'
-    + '<th style="' + ths + '">平均着順</th>'
-    + '<th style="' + ths + '">相性スコア</th>'
-    + '<th style="' + ths + '">着順差</th>'
-    + '<th style="' + ths + '">スコア影響</th>'
-    + '<th style="' + ths + '">TOP率</th>'
-    + '<th style="' + ths + '">連対率</th>'
-    + '<th style="' + ths + '">4着回避率</th>'
+    + thSort('games',        '回数',     true)
+    + thSort('avgRank',      '平均着順', true)
+    + thSort('affinityScore','相性スコア',false)
+    + thSort('rankDiff',     '着順差',   false)
+    + thSort('scoreDiff',    'スコア影響',false)
+    + thSort('topRate',      'TOP率',    false)
+    + thSort('renRate',      '連対率',   false)
+    + thSort('fourthRate',   '4着回避率',true)
     + '</tr></thead><tbody>';
 
   rows.forEach(function(r, i) {
