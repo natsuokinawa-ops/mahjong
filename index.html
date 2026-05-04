@@ -305,31 +305,16 @@ h1 em{color:var(--gold);font-style:normal;}
       <div style="margin-bottom:28px">
         <div class="section-label">並び替え</div>
         <div class="controls">
-          <button class="sort-btn active" data-sort="final">総合スコア</button>
+          <button class="sort-btn" data-sort="final">総合スコア</button>
           <button class="sort-btn" data-sort="elo">Elo rating</button>
           <button class="sort-btn" data-sort="TOP率">TOP率</button>
           <button class="sort-btn" data-sort="4着回避率">4着回避</button>
           <button class="sort-btn" data-sort="Ave.Score">Ave.Score</button>
           <button class="sort-btn" data-sort="Total Score">TotalScore</button>
-          <button class="sort-btn" data-sort="連対率">連対率</button>
+          <button class="sort-btn active" data-sort="連対率">連対率</button>
         </div>
       </div>
-      <div id="podium"><div class="podium">
-    <div class="podium-item podium-2nd">
-      <div class="podium-name">Hit!ゴトウ</div>
-      <div class="podium-score-disp">63.3</div>
-      <div class="podium-block">2</div>
-    </div>
-    <div class="podium-item podium-1st">
-      <div class="podium-name">ユウカ</div>
-      <div class="podium-score-disp">70.1</div>
-      <div class="podium-block">1</div>
-    </div>
-    <div class="podium-item podium-3rd">
-      <div class="podium-name">オージ</div>
-      <div class="podium-score-disp">63.1</div>
-      <div class="podium-block">3</div>
-    </div></div></div>
+      <div id="podium"></div>
       <div class="ranking-list" id="rankingList"><div class="rank-item rank-1">
       <div class="rank-num">1</div>
       <div class="rank-main">
@@ -359,8 +344,8 @@ h1 em{color:var(--gold);font-style:normal;}
         </div>
       </div>
       <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">70.1</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 55%</div>
+        <div class="score-number" style="font-size:20px">83.3%</div>
+        <div class="score-label">総合 #1</div>
       </div>
       <div class="rank-detail">
         <div class="detail-stat">
@@ -400,288 +385,8 @@ h1 em{color:var(--gold);font-style:normal;}
           <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
           
         </div>
-      </div></div><div class="rank-item rank-2">
+      </div></div><div class="rank-item">
       <div class="rank-num">2</div>
-      <div class="rank-main">
-        <div class="rank-name-row">
-          <span class="rank-name">Hit!ゴトウ</span>
-          <span class="rank-badge badge-a">A</span>
-          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">12局</span>
-        </div>
-        <div class="rank-bars">
-          <div class="mini-bar">
-            <span class="mini-label" style="color:#42e8a0">TOP率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:59%;background:#42e8a0"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">33%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#c882e8">4着回避</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:67%;background:#c882e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">83%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#f5c842">平均Pt</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:43%;background:#f5c842"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+11.0</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#4290e8">連対率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:70%;background:#4290e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">75%</span>
-          </div>
-        </div>
-      </div>
-      <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">63.3</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 71%</div>
-      </div>
-      <div class="rank-detail">
-        <div class="detail-stat">
-          <div class="detail-stat-name">Elo rating</div>
-          <div class="detail-stat-val">1578<span class="detail-stat-unit"></span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:83%"></div></div><div class="detail-stat-norm">83/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">TOP率</div>
-          <div class="detail-stat-val">33.3<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:59%"></div></div><div class="detail-stat-norm">59/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">4着回避率</div>
-          <div class="detail-stat-val">83.3<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:67%"></div></div><div class="detail-stat-norm">67/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">平均スコア</div>
-          <div class="detail-stat-val">11.00<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:43%"></div></div><div class="detail-stat-norm">43/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">合計スコア</div>
-          <div class="detail-stat-val">132<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:99%"></div></div><div class="detail-stat-norm">99/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">連対率</div>
-          <div class="detail-stat-val">75.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:70%"></div></div><div class="detail-stat-norm">70/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">信頼補正</div>
-          <div class="detail-stat-val">71<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:71%"></div></div><div class="detail-stat-norm">71/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">半荘数</div>
-          <div class="detail-stat-val">12<span class="detail-stat-unit">局</span></div>
-          
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">役満</div>
-          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
-          
-        </div>
-      </div></div><div class="rank-item rank-3">
-      <div class="rank-num">3</div>
-      <div class="rank-main">
-        <div class="rank-name-row">
-          <span class="rank-name">オージ</span>
-          <span class="rank-badge badge-a">A</span>
-          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">10局</span>
-        </div>
-        <div class="rank-bars">
-          <div class="mini-bar">
-            <span class="mini-label" style="color:#42e8a0">TOP率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:51%;background:#42e8a0"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">30%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#c882e8">4着回避</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:100%;background:#c882e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">100%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#f5c842">平均Pt</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:36%;background:#f5c842"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+4.3</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#4290e8">連対率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:40%;background:#4290e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">50%</span>
-          </div>
-        </div>
-      </div>
-      <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">63.1</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 67%</div>
-      </div>
-      <div class="rank-detail">
-        <div class="detail-stat">
-          <div class="detail-stat-name">Elo rating</div>
-          <div class="detail-stat-val">1578<span class="detail-stat-unit"></span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:83%"></div></div><div class="detail-stat-norm">83/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">TOP率</div>
-          <div class="detail-stat-val">30.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:51%"></div></div><div class="detail-stat-norm">51/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">4着回避率</div>
-          <div class="detail-stat-val">100.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:100%"></div></div><div class="detail-stat-norm">100/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">平均スコア</div>
-          <div class="detail-stat-val">4.30<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:36%"></div></div><div class="detail-stat-norm">36/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">合計スコア</div>
-          <div class="detail-stat-val">43<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:76%"></div></div><div class="detail-stat-norm">76/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">連対率</div>
-          <div class="detail-stat-val">50.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:40%"></div></div><div class="detail-stat-norm">40/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">信頼補正</div>
-          <div class="detail-stat-val">67<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:67%"></div></div><div class="detail-stat-norm">67/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">半荘数</div>
-          <div class="detail-stat-val">10<span class="detail-stat-unit">局</span></div>
-          
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">役満</div>
-          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
-          
-        </div>
-      </div></div><div class="rank-item">
-      <div class="rank-num">4</div>
-      <div class="rank-main">
-        <div class="rank-name-row">
-          <span class="rank-name">ヒガシ</span>
-          <span class="rank-badge badge-a">A</span>
-          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">9局</span>
-        </div>
-        <div class="rank-bars">
-          <div class="mini-bar">
-            <span class="mini-label" style="color:#42e8a0">TOP率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:59%;background:#42e8a0"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">33%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#c882e8">4着回避</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:78%;background:#c882e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">89%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#f5c842">平均Pt</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:47%;background:#f5c842"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+15.2</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#4290e8">連対率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:60%;background:#4290e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">67%</span>
-          </div>
-        </div>
-      </div>
-      <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">62.7</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 64%</div>
-      </div>
-      <div class="rank-detail">
-        <div class="detail-stat">
-          <div class="detail-stat-name">Elo rating</div>
-          <div class="detail-stat-val">1566<span class="detail-stat-unit"></span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:79%"></div></div><div class="detail-stat-norm">79/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">TOP率</div>
-          <div class="detail-stat-val">33.3<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:59%"></div></div><div class="detail-stat-norm">59/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">4着回避率</div>
-          <div class="detail-stat-val">88.9<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:78%"></div></div><div class="detail-stat-norm">78/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">平均スコア</div>
-          <div class="detail-stat-val">15.22<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:47%"></div></div><div class="detail-stat-norm">47/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">合計スコア</div>
-          <div class="detail-stat-val">137<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:100%"></div></div><div class="detail-stat-norm">100/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">連対率</div>
-          <div class="detail-stat-val">66.7<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:60%"></div></div><div class="detail-stat-norm">60/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">信頼補正</div>
-          <div class="detail-stat-val">64<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:64%"></div></div><div class="detail-stat-norm">64/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">半荘数</div>
-          <div class="detail-stat-val">9<span class="detail-stat-unit">局</span></div>
-          
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">役満</div>
-          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
-          
-        </div>
-      </div></div><div class="rank-item">
-      <div class="rank-num">5</div>
-      <div class="rank-main">
-        <div class="rank-name-row">
-          <span class="rank-name">としや</span>
-          <span class="rank-badge badge-a">A</span>
-          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">8局</span>
-        </div>
-        <div class="rank-bars">
-          <div class="mini-bar">
-            <span class="mini-label" style="color:#42e8a0">TOP率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:69%;background:#42e8a0"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">38%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#c882e8">4着回避</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:50%;background:#c882e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">75%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#f5c842">平均Pt</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:44%;background:#f5c842"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+12.0</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#4290e8">連対率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:70%;background:#4290e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">75%</span>
-          </div>
-        </div>
-      </div>
-      <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">60.7</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 62%</div>
-      </div>
-      <div class="rank-detail">
-        <div class="detail-stat">
-          <div class="detail-stat-name">Elo rating</div>
-          <div class="detail-stat-val">1570<span class="detail-stat-unit"></span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:81%"></div></div><div class="detail-stat-norm">81/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">TOP率</div>
-          <div class="detail-stat-val">37.5<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:69%"></div></div><div class="detail-stat-norm">69/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">4着回避率</div>
-          <div class="detail-stat-val">75.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:50%"></div></div><div class="detail-stat-norm">50/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">平均スコア</div>
-          <div class="detail-stat-val">12.00<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:44%"></div></div><div class="detail-stat-norm">44/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">合計スコア</div>
-          <div class="detail-stat-val">96<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:89%"></div></div><div class="detail-stat-norm">89/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">連対率</div>
-          <div class="detail-stat-val">75.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:70%"></div></div><div class="detail-stat-norm">70/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">信頼補正</div>
-          <div class="detail-stat-val">62<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:62%"></div></div><div class="detail-stat-norm">62/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">半荘数</div>
-          <div class="detail-stat-val">8<span class="detail-stat-unit">局</span></div>
-          
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">役満</div>
-          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
-          
-        </div>
-      </div></div><div class="rank-item">
-      <div class="rank-num">6</div>
       <div class="rank-main">
         <div class="rank-name-row">
           <span class="rank-name">まさやん</span>
@@ -709,8 +414,8 @@ h1 em{color:var(--gold);font-style:normal;}
         </div>
       </div>
       <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">58.9</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 55%</div>
+        <div class="score-number" style="font-size:20px">83.3%</div>
+        <div class="score-label">総合 #6</div>
       </div>
       <div class="rank-detail">
         <div class="detail-stat">
@@ -751,7 +456,357 @@ h1 em{color:var(--gold);font-style:normal;}
           
         </div>
       </div></div><div class="rank-item">
+      <div class="rank-num">3</div>
+      <div class="rank-main">
+        <div class="rank-name-row">
+          <span class="rank-name">としや</span>
+          <span class="rank-badge badge-a">A</span>
+          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">8局</span>
+        </div>
+        <div class="rank-bars">
+          <div class="mini-bar">
+            <span class="mini-label" style="color:#42e8a0">TOP率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:69%;background:#42e8a0"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">38%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#c882e8">4着回避</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:50%;background:#c882e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">75%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#f5c842">平均Pt</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:44%;background:#f5c842"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+12.0</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#4290e8">連対率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:70%;background:#4290e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">75%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rank-score-col">
+        <div class="score-number" style="font-size:20px">75.0%</div>
+        <div class="score-label">総合 #5</div>
+      </div>
+      <div class="rank-detail">
+        <div class="detail-stat">
+          <div class="detail-stat-name">Elo rating</div>
+          <div class="detail-stat-val">1570<span class="detail-stat-unit"></span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:81%"></div></div><div class="detail-stat-norm">81/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">TOP率</div>
+          <div class="detail-stat-val">37.5<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:69%"></div></div><div class="detail-stat-norm">69/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">4着回避率</div>
+          <div class="detail-stat-val">75.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:50%"></div></div><div class="detail-stat-norm">50/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">平均スコア</div>
+          <div class="detail-stat-val">12.00<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:44%"></div></div><div class="detail-stat-norm">44/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">合計スコア</div>
+          <div class="detail-stat-val">96<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:89%"></div></div><div class="detail-stat-norm">89/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">連対率</div>
+          <div class="detail-stat-val">75.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:70%"></div></div><div class="detail-stat-norm">70/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">信頼補正</div>
+          <div class="detail-stat-val">62<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:62%"></div></div><div class="detail-stat-norm">62/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">半荘数</div>
+          <div class="detail-stat-val">8<span class="detail-stat-unit">局</span></div>
+          
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">役満</div>
+          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
+          
+        </div>
+      </div></div><div class="rank-item rank-2">
+      <div class="rank-num">4</div>
+      <div class="rank-main">
+        <div class="rank-name-row">
+          <span class="rank-name">Hit!ゴトウ</span>
+          <span class="rank-badge badge-a">A</span>
+          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">12局</span>
+        </div>
+        <div class="rank-bars">
+          <div class="mini-bar">
+            <span class="mini-label" style="color:#42e8a0">TOP率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:59%;background:#42e8a0"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">33%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#c882e8">4着回避</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:67%;background:#c882e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">83%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#f5c842">平均Pt</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:43%;background:#f5c842"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+11.0</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#4290e8">連対率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:70%;background:#4290e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">75%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rank-score-col">
+        <div class="score-number" style="font-size:20px">75.0%</div>
+        <div class="score-label">総合 #2</div>
+      </div>
+      <div class="rank-detail">
+        <div class="detail-stat">
+          <div class="detail-stat-name">Elo rating</div>
+          <div class="detail-stat-val">1578<span class="detail-stat-unit"></span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:83%"></div></div><div class="detail-stat-norm">83/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">TOP率</div>
+          <div class="detail-stat-val">33.3<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:59%"></div></div><div class="detail-stat-norm">59/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">4着回避率</div>
+          <div class="detail-stat-val">83.3<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:67%"></div></div><div class="detail-stat-norm">67/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">平均スコア</div>
+          <div class="detail-stat-val">11.00<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:43%"></div></div><div class="detail-stat-norm">43/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">合計スコア</div>
+          <div class="detail-stat-val">132<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:99%"></div></div><div class="detail-stat-norm">99/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">連対率</div>
+          <div class="detail-stat-val">75.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:70%"></div></div><div class="detail-stat-norm">70/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">信頼補正</div>
+          <div class="detail-stat-val">71<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:71%"></div></div><div class="detail-stat-norm">71/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">半荘数</div>
+          <div class="detail-stat-val">12<span class="detail-stat-unit">局</span></div>
+          
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">役満</div>
+          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
+          
+        </div>
+      </div></div><div class="rank-item">
+      <div class="rank-num">5</div>
+      <div class="rank-main">
+        <div class="rank-name-row">
+          <span class="rank-name">ヒガシ</span>
+          <span class="rank-badge badge-a">A</span>
+          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">9局</span>
+        </div>
+        <div class="rank-bars">
+          <div class="mini-bar">
+            <span class="mini-label" style="color:#42e8a0">TOP率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:59%;background:#42e8a0"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">33%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#c882e8">4着回避</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:78%;background:#c882e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">89%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#f5c842">平均Pt</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:47%;background:#f5c842"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+15.2</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#4290e8">連対率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:60%;background:#4290e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">67%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rank-score-col">
+        <div class="score-number" style="font-size:20px">66.7%</div>
+        <div class="score-label">総合 #4</div>
+      </div>
+      <div class="rank-detail">
+        <div class="detail-stat">
+          <div class="detail-stat-name">Elo rating</div>
+          <div class="detail-stat-val">1566<span class="detail-stat-unit"></span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:79%"></div></div><div class="detail-stat-norm">79/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">TOP率</div>
+          <div class="detail-stat-val">33.3<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:59%"></div></div><div class="detail-stat-norm">59/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">4着回避率</div>
+          <div class="detail-stat-val">88.9<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:78%"></div></div><div class="detail-stat-norm">78/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">平均スコア</div>
+          <div class="detail-stat-val">15.22<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:47%"></div></div><div class="detail-stat-norm">47/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">合計スコア</div>
+          <div class="detail-stat-val">137<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:100%"></div></div><div class="detail-stat-norm">100/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">連対率</div>
+          <div class="detail-stat-val">66.7<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:60%"></div></div><div class="detail-stat-norm">60/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">信頼補正</div>
+          <div class="detail-stat-val">64<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:64%"></div></div><div class="detail-stat-norm">64/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">半荘数</div>
+          <div class="detail-stat-val">9<span class="detail-stat-unit">局</span></div>
+          
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">役満</div>
+          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
+          
+        </div>
+      </div></div><div class="rank-item">
+      <div class="rank-num">6</div>
+      <div class="rank-main">
+        <div class="rank-name-row">
+          <span class="rank-name">ボビー</span>
+          <span class="rank-badge badge-c">C</span>
+          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">19局</span>
+        </div>
+        <div class="rank-bars">
+          <div class="mini-bar">
+            <span class="mini-label" style="color:#42e8a0">TOP率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:29%;background:#42e8a0"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">21%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#c882e8">4着回避</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:26%;background:#c882e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">63%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#f5c842">平均Pt</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:33%;background:#f5c842"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+2.0</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#4290e8">連対率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:43%;background:#4290e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">53%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rank-score-col">
+        <div class="score-number" style="font-size:20px">52.6%</div>
+        <div class="score-label">総合 #9</div>
+      </div>
+      <div class="rank-detail">
+        <div class="detail-stat">
+          <div class="detail-stat-name">Elo rating</div>
+          <div class="detail-stat-val">1445<span class="detail-stat-unit"></span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:37%"></div></div><div class="detail-stat-norm">37/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">TOP率</div>
+          <div class="detail-stat-val">21.1<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:29%"></div></div><div class="detail-stat-norm">29/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">4着回避率</div>
+          <div class="detail-stat-val">63.2<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:26%"></div></div><div class="detail-stat-norm">26/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">平均スコア</div>
+          <div class="detail-stat-val">2.00<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:33%"></div></div><div class="detail-stat-norm">33/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">合計スコア</div>
+          <div class="detail-stat-val">38<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:74%"></div></div><div class="detail-stat-norm">74/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">連対率</div>
+          <div class="detail-stat-val">52.6<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:43%"></div></div><div class="detail-stat-norm">43/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">信頼補正</div>
+          <div class="detail-stat-val">79<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:79%"></div></div><div class="detail-stat-norm">79/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">半荘数</div>
+          <div class="detail-stat-val">19<span class="detail-stat-unit">局</span></div>
+          
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">役満</div>
+          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
+          
+        </div>
+      </div></div><div class="rank-item rank-3">
       <div class="rank-num">7</div>
+      <div class="rank-main">
+        <div class="rank-name-row">
+          <span class="rank-name">オージ</span>
+          <span class="rank-badge badge-a">A</span>
+          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">10局</span>
+        </div>
+        <div class="rank-bars">
+          <div class="mini-bar">
+            <span class="mini-label" style="color:#42e8a0">TOP率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:51%;background:#42e8a0"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">30%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#c882e8">4着回避</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:100%;background:#c882e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">100%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#f5c842">平均Pt</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:36%;background:#f5c842"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+4.3</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#4290e8">連対率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:40%;background:#4290e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">50%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rank-score-col">
+        <div class="score-number" style="font-size:20px">50.0%</div>
+        <div class="score-label">総合 #3</div>
+      </div>
+      <div class="rank-detail">
+        <div class="detail-stat">
+          <div class="detail-stat-name">Elo rating</div>
+          <div class="detail-stat-val">1578<span class="detail-stat-unit"></span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:83%"></div></div><div class="detail-stat-norm">83/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">TOP率</div>
+          <div class="detail-stat-val">30.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:51%"></div></div><div class="detail-stat-norm">51/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">4着回避率</div>
+          <div class="detail-stat-val">100.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:100%"></div></div><div class="detail-stat-norm">100/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">平均スコア</div>
+          <div class="detail-stat-val">4.30<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:36%"></div></div><div class="detail-stat-norm">36/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">合計スコア</div>
+          <div class="detail-stat-val">43<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:76%"></div></div><div class="detail-stat-norm">76/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">連対率</div>
+          <div class="detail-stat-val">50.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:40%"></div></div><div class="detail-stat-norm">40/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">信頼補正</div>
+          <div class="detail-stat-val">67<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:67%"></div></div><div class="detail-stat-norm">67/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">半荘数</div>
+          <div class="detail-stat-val">10<span class="detail-stat-unit">局</span></div>
+          
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">役満</div>
+          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
+          
+        </div>
+      </div></div><div class="rank-item">
+      <div class="rank-num">8</div>
       <div class="rank-main">
         <div class="rank-name-row">
           <span class="rank-name">あっきー</span>
@@ -779,8 +834,8 @@ h1 em{color:var(--gold);font-style:normal;}
         </div>
       </div>
       <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">44.6</div>
-        <div class="score-label"><span class="cred-dot" style="background:#42e8a0"></span>cred 80%</div>
+        <div class="score-number" style="font-size:20px">40.0%</div>
+        <div class="score-label">総合 #7</div>
       </div>
       <div class="rank-detail">
         <div class="detail-stat">
@@ -821,217 +876,7 @@ h1 em{color:var(--gold);font-style:normal;}
           
         </div>
       </div></div><div class="rank-item">
-      <div class="rank-num">8</div>
-      <div class="rank-main">
-        <div class="rank-name-row">
-          <span class="rank-name">すーさん</span>
-          <span class="rank-badge badge-b">B</span>
-          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">10局</span>
-        </div>
-        <div class="rank-bars">
-          <div class="mini-bar">
-            <span class="mini-label" style="color:#42e8a0">TOP率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:2%;background:#42e8a0"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">10%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#c882e8">4着回避</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:80%;background:#c882e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">90%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#f5c842">平均Pt</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:18%;background:#f5c842"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">-12.3</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#4290e8">連対率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:16%;background:#4290e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">30%</span>
-          </div>
-        </div>
-      </div>
-      <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">42.0</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 67%</div>
-      </div>
-      <div class="rank-detail">
-        <div class="detail-stat">
-          <div class="detail-stat-name">Elo rating</div>
-          <div class="detail-stat-val">1502<span class="detail-stat-unit"></span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:57%"></div></div><div class="detail-stat-norm">57/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">TOP率</div>
-          <div class="detail-stat-val">10.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:2%"></div></div><div class="detail-stat-norm">2/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">4着回避率</div>
-          <div class="detail-stat-val">90.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:80%"></div></div><div class="detail-stat-norm">80/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">平均スコア</div>
-          <div class="detail-stat-val">-12.30<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:18%"></div></div><div class="detail-stat-norm">18/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">合計スコア</div>
-          <div class="detail-stat-val">-123<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:33%"></div></div><div class="detail-stat-norm">33/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">連対率</div>
-          <div class="detail-stat-val">30.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:16%"></div></div><div class="detail-stat-norm">16/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">信頼補正</div>
-          <div class="detail-stat-val">67<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:67%"></div></div><div class="detail-stat-norm">67/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">半荘数</div>
-          <div class="detail-stat-val">10<span class="detail-stat-unit">局</span></div>
-          
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">役満</div>
-          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
-          
-        </div>
-      </div></div><div class="rank-item">
       <div class="rank-num">9</div>
-      <div class="rank-main">
-        <div class="rank-name-row">
-          <span class="rank-name">ボビー</span>
-          <span class="rank-badge badge-c">C</span>
-          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">19局</span>
-        </div>
-        <div class="rank-bars">
-          <div class="mini-bar">
-            <span class="mini-label" style="color:#42e8a0">TOP率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:29%;background:#42e8a0"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">21%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#c882e8">4着回避</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:26%;background:#c882e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">63%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#f5c842">平均Pt</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:33%;background:#f5c842"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">+2.0</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#4290e8">連対率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:43%;background:#4290e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">53%</span>
-          </div>
-        </div>
-      </div>
-      <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">37.6</div>
-        <div class="score-label"><span class="cred-dot" style="background:#42e8a0"></span>cred 79%</div>
-      </div>
-      <div class="rank-detail">
-        <div class="detail-stat">
-          <div class="detail-stat-name">Elo rating</div>
-          <div class="detail-stat-val">1445<span class="detail-stat-unit"></span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:37%"></div></div><div class="detail-stat-norm">37/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">TOP率</div>
-          <div class="detail-stat-val">21.1<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:29%"></div></div><div class="detail-stat-norm">29/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">4着回避率</div>
-          <div class="detail-stat-val">63.2<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:26%"></div></div><div class="detail-stat-norm">26/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">平均スコア</div>
-          <div class="detail-stat-val">2.00<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:33%"></div></div><div class="detail-stat-norm">33/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">合計スコア</div>
-          <div class="detail-stat-val">38<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:74%"></div></div><div class="detail-stat-norm">74/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">連対率</div>
-          <div class="detail-stat-val">52.6<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:43%"></div></div><div class="detail-stat-norm">43/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">信頼補正</div>
-          <div class="detail-stat-val">79<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:79%"></div></div><div class="detail-stat-norm">79/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">半荘数</div>
-          <div class="detail-stat-val">19<span class="detail-stat-unit">局</span></div>
-          
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">役満</div>
-          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
-          
-        </div>
-      </div></div><div class="rank-item">
-      <div class="rank-num">10</div>
-      <div class="rank-main">
-        <div class="rank-name-row">
-          <span class="rank-name">ともや</span>
-          <span class="rank-badge badge-c">C</span>
-          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">6局</span>
-        </div>
-        <div class="rank-bars">
-          <div class="mini-bar">
-            <span class="mini-label" style="color:#42e8a0">TOP率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:19%;background:#42e8a0"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">17%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#c882e8">4着回避</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:0%;background:#c882e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">50%</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#f5c842">平均Pt</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:16%;background:#f5c842"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">-14.2</span>
-          </div><div class="mini-bar">
-            <span class="mini-label" style="color:#4290e8">連対率</span>
-            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:0%;background:#4290e8"></div></div>
-            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">17%</span>
-          </div>
-        </div>
-      </div>
-      <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">28.3</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 55%</div>
-      </div>
-      <div class="rank-detail">
-        <div class="detail-stat">
-          <div class="detail-stat-name">Elo rating</div>
-          <div class="detail-stat-val">1347<span class="detail-stat-unit"></span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:3%"></div></div><div class="detail-stat-norm">3/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">TOP率</div>
-          <div class="detail-stat-val">16.7<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:19%"></div></div><div class="detail-stat-norm">19/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">4着回避率</div>
-          <div class="detail-stat-val">50.0<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:0%"></div></div><div class="detail-stat-norm">0/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">平均スコア</div>
-          <div class="detail-stat-val">-14.17<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:16%"></div></div><div class="detail-stat-norm">16/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">合計スコア</div>
-          <div class="detail-stat-val">-85<span class="detail-stat-unit">pt</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:43%"></div></div><div class="detail-stat-norm">43/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">連対率</div>
-          <div class="detail-stat-val">16.7<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:0%"></div></div><div class="detail-stat-norm">0/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">信頼補正</div>
-          <div class="detail-stat-val">55<span class="detail-stat-unit">%</span></div>
-          <div class="detail-bar"><div class="detail-bar-fill" style="width:55%"></div></div><div class="detail-stat-norm">55/100</div>
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">半荘数</div>
-          <div class="detail-stat-val">6<span class="detail-stat-unit">局</span></div>
-          
-        </div><div class="detail-stat">
-          <div class="detail-stat-name">役満</div>
-          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
-          
-        </div>
-      </div></div><div class="rank-item">
-      <div class="rank-num">11</div>
       <div class="rank-main">
         <div class="rank-name-row">
           <span class="rank-name">アフロ</span>
@@ -1059,8 +904,8 @@ h1 em{color:var(--gold);font-style:normal;}
         </div>
       </div>
       <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">26.5</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 72%</div>
+        <div class="score-number" style="font-size:20px">30.8%</div>
+        <div class="score-label">総合 #11</div>
       </div>
       <div class="rank-detail">
         <div class="detail-stat">
@@ -1101,6 +946,146 @@ h1 em{color:var(--gold);font-style:normal;}
           
         </div>
       </div></div><div class="rank-item">
+      <div class="rank-num">10</div>
+      <div class="rank-main">
+        <div class="rank-name-row">
+          <span class="rank-name">すーさん</span>
+          <span class="rank-badge badge-b">B</span>
+          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">10局</span>
+        </div>
+        <div class="rank-bars">
+          <div class="mini-bar">
+            <span class="mini-label" style="color:#42e8a0">TOP率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:2%;background:#42e8a0"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">10%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#c882e8">4着回避</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:80%;background:#c882e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">90%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#f5c842">平均Pt</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:18%;background:#f5c842"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">-12.3</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#4290e8">連対率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:16%;background:#4290e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">30%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rank-score-col">
+        <div class="score-number" style="font-size:20px">30.0%</div>
+        <div class="score-label">総合 #8</div>
+      </div>
+      <div class="rank-detail">
+        <div class="detail-stat">
+          <div class="detail-stat-name">Elo rating</div>
+          <div class="detail-stat-val">1502<span class="detail-stat-unit"></span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:57%"></div></div><div class="detail-stat-norm">57/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">TOP率</div>
+          <div class="detail-stat-val">10.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:2%"></div></div><div class="detail-stat-norm">2/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">4着回避率</div>
+          <div class="detail-stat-val">90.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:80%"></div></div><div class="detail-stat-norm">80/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">平均スコア</div>
+          <div class="detail-stat-val">-12.30<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:18%"></div></div><div class="detail-stat-norm">18/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">合計スコア</div>
+          <div class="detail-stat-val">-123<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:33%"></div></div><div class="detail-stat-norm">33/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">連対率</div>
+          <div class="detail-stat-val">30.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:16%"></div></div><div class="detail-stat-norm">16/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">信頼補正</div>
+          <div class="detail-stat-val">67<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:67%"></div></div><div class="detail-stat-norm">67/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">半荘数</div>
+          <div class="detail-stat-val">10<span class="detail-stat-unit">局</span></div>
+          
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">役満</div>
+          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
+          
+        </div>
+      </div></div><div class="rank-item">
+      <div class="rank-num">11</div>
+      <div class="rank-main">
+        <div class="rank-name-row">
+          <span class="rank-name">ともや</span>
+          <span class="rank-badge badge-c">C</span>
+          <span style="font-size:11px;color:var(--soft);font-family:'DM Mono',monospace">6局</span>
+        </div>
+        <div class="rank-bars">
+          <div class="mini-bar">
+            <span class="mini-label" style="color:#42e8a0">TOP率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:19%;background:#42e8a0"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">17%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#c882e8">4着回避</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:0%;background:#c882e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">50%</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#f5c842">平均Pt</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:16%;background:#f5c842"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">-14.2</span>
+          </div><div class="mini-bar">
+            <span class="mini-label" style="color:#4290e8">連対率</span>
+            <div class="mini-bar-track"><div class="mini-bar-fill" style="width:0%;background:#4290e8"></div></div>
+            <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text)">17%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rank-score-col">
+        <div class="score-number" style="font-size:20px">16.7%</div>
+        <div class="score-label">総合 #10</div>
+      </div>
+      <div class="rank-detail">
+        <div class="detail-stat">
+          <div class="detail-stat-name">Elo rating</div>
+          <div class="detail-stat-val">1347<span class="detail-stat-unit"></span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:3%"></div></div><div class="detail-stat-norm">3/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">TOP率</div>
+          <div class="detail-stat-val">16.7<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:19%"></div></div><div class="detail-stat-norm">19/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">4着回避率</div>
+          <div class="detail-stat-val">50.0<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:0%"></div></div><div class="detail-stat-norm">0/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">平均スコア</div>
+          <div class="detail-stat-val">-14.17<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:16%"></div></div><div class="detail-stat-norm">16/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">合計スコア</div>
+          <div class="detail-stat-val">-85<span class="detail-stat-unit">pt</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:43%"></div></div><div class="detail-stat-norm">43/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">連対率</div>
+          <div class="detail-stat-val">16.7<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:0%"></div></div><div class="detail-stat-norm">0/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">信頼補正</div>
+          <div class="detail-stat-val">55<span class="detail-stat-unit">%</span></div>
+          <div class="detail-bar"><div class="detail-bar-fill" style="width:55%"></div></div><div class="detail-stat-norm">55/100</div>
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">半荘数</div>
+          <div class="detail-stat-val">6<span class="detail-stat-unit">局</span></div>
+          
+        </div><div class="detail-stat">
+          <div class="detail-stat-name">役満</div>
+          <div class="detail-stat-val">0<span class="detail-stat-unit">回</span></div>
+          
+        </div>
+      </div></div><div class="rank-item">
       <div class="rank-num">12</div>
       <div class="rank-main">
         <div class="rank-name-row">
@@ -1129,8 +1114,8 @@ h1 em{color:var(--gold);font-style:normal;}
         </div>
       </div>
       <div class="rank-score-col">
-        <div class="score-number" style="font-size:26px">19.2</div>
-        <div class="score-label"><span class="cred-dot" style="background:#f5c842"></span>cred 62%</div>
+        <div class="score-number" style="font-size:20px">12.5%</div>
+        <div class="score-label">総合 #12</div>
       </div>
       <div class="rank-detail">
         <div class="detail-stat">
