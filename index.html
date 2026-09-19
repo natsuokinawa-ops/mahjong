@@ -288,6 +288,7 @@ h1 em{color:var(--gold);font-style:normal;}
   <div id="mainApp" style="display:none">
     <div class="tabs">
       <button class="tab-btn active" data-tab="ranking">🏆 Ranking</button>
+      <button class="tab-btn" data-tab="trend">📈 推移</button>
       <button class="tab-btn" data-tab="affinity">🤝 相性分析</button>
       <button class="tab-btn" data-tab="compare">⚔️ 雀士比較</button>
       <button class="tab-btn" data-tab="guide">📖 算出基準</button>
@@ -351,6 +352,32 @@ h1 em{color:var(--gold);font-style:normal;}
         <div class="player-grid" id="playerGrid"></div>
       </div>
       <div id="compareContent"><div class="select-hint">↑ 上のボタンからプレイヤーを選んでください</div></div>
+    </div>
+
+
+    <!-- ═══ TREND TAB ═══ -->
+    <div class="tab-pane" id="tab-trend">
+      <div style="margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div id="trendPeriodSelector" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--soft);">
+          <div id="trendUnrankedToggle" onclick="toggleTrendUnranked()" style="width:36px;height:20px;background:var(--border);border-radius:10px;position:relative;cursor:pointer;transition:background .2s;">
+            <div id="trendUnrankedKnob" style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:left .2s;"></div>
+          </div>
+          <span id="trendUnrankedLabel">参加数不足を含む</span>
+        </label>
+      </div>
+      <div style="background:var(--card);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:12px;">📈 総合スコア推移</div>
+        <div style="position:relative;height:320px;">
+          <canvas id="trendScoreChart"></canvas>
+        </div>
+      </div>
+      <div style="background:var(--card);border-radius:10px;padding:16px;">
+        <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:12px;">🏅 ランキング順位推移</div>
+        <div style="position:relative;height:320px;">
+          <canvas id="trendRankChart"></canvas>
+        </div>
+      </div>
     </div>
 
 
@@ -684,7 +711,7 @@ function parseExcel(buffer) {
 
   // プレイヤー名→列番号マップ（0-indexed）
   const playerCols = {};
-  for (let col = 6; col < 62; col += 2) {
+  for (let col = 6; col < 80; col += 2) {
     const nameRaw = cv(1, col);
     if (!nameRaw || String(nameRaw) === 'Check') continue;
     const name = String(nameRaw).split('\n')[0].trim();
@@ -810,7 +837,7 @@ function parseExcel(buffer) {
     const eVal = nv(r, 4);
     const dVal = nv(r, 3);
 
-    if (eVal === 1 && dVal && dVal >= 2020 && dVal <= 2100) {
+    if (eVal != null && eVal >= 1 && Number.isInteger(eVal) && dVal && dVal >= 2020 && dVal <= 2100) {
       // 前の半荘を確定
       flushGame();
       const year = Math.floor(dVal);
@@ -1211,6 +1238,7 @@ document.addEventListener('click', e => {
     if (pb.dataset.type === 'rank') applyRankSection(pb.dataset.section);
     else if (pb.dataset.type === 'cmp') applyCmpSection(pb.dataset.section);
     else if (pb.dataset.type === 'aff') applyAffinitySection(pb.dataset.section);
+    else if (pb.dataset.type === 'trend') applyTrendSection(pb.dataset.section);
     return;
   }
   const sb = e.target.closest('.sort-btn');
@@ -1843,6 +1871,7 @@ function switchTab(id) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));
   if (id === 'affinity') setTimeout(initAffinityTab, 0);
+  if (id === 'trend')    setTimeout(initTrendTab, 0);
   if (id === 'settings') setTimeout(function() { initExclUI(); initCred(); }, 0);
 }
 
@@ -2501,6 +2530,237 @@ function renderAffinity() {
 
   html += '</tbody></table></div>';
   el.innerHTML = html;
+}
+
+
+// ════════════════════════════════════════════════
+// TREND (推移グラフ)
+// ════════════════════════════════════════════════
+
+var CUR_TREND_SEC = '';
+var TREND_INCLUDE_UNRANKED = false;
+var trendScoreChartInst = null;
+var trendRankChartInst  = null;
+
+function initTrendTab() {
+  if (!Object.keys(RAW).length) {
+    return;
+  }
+  if (!CUR_TREND_SEC) CUR_TREND_SEC = YEARS.length ? String(YEARS[0]) : 'TOTAL';
+  buildTrendPeriodBtns();
+  renderTrendCharts();
+}
+
+function buildTrendPeriodBtns() {
+  var el = document.getElementById('trendPeriodSelector');
+  if (!el) return;
+  var secs = ['TOTAL', ...YEARS];
+  el.innerHTML = secs.map(function(s) {
+    var label = s === 'TOTAL' ? '全期間' : s + '年';
+    var active = s === CUR_TREND_SEC ? ' active' : '';
+    return '<button class="period-btn' + active + '" data-type="trend" data-section="' + s + '">' + label + '</button>';
+  }).join('');
+}
+
+function applyTrendSection(sec) {
+  CUR_TREND_SEC = sec;
+  buildTrendPeriodBtns();
+  renderTrendCharts();
+}
+
+function toggleTrendUnranked() {
+  TREND_INCLUDE_UNRANKED = !TREND_INCLUDE_UNRANKED;
+  var toggle = document.getElementById('trendUnrankedToggle');
+  var knob   = document.getElementById('trendUnrankedKnob');
+  var label  = document.getElementById('trendUnrankedLabel');
+  if (TREND_INCLUDE_UNRANKED) {
+    toggle.style.background = 'var(--gold)';
+    knob.style.left = '18px';
+    label.style.color = 'var(--gold)';
+  } else {
+    toggle.style.background = 'var(--border)';
+    knob.style.left = '2px';
+    label.style.color = 'var(--soft)';
+  }
+  renderTrendCharts();
+}
+
+function renderTrendCharts() {
+  var sec = CUR_TREND_SEC;
+
+  // 対象期間のゲームを日付順に取得
+  var filteredGames = sec === 'TOTAL'
+    ? GAMES.slice()
+    : GAMES.filter(function(g) { return String(g.year) === String(sec); });
+
+  // 日付でグループ化
+  var dayMap = {};
+  filteredGames.forEach(function(g) {
+    var key = g.date || ('no-date-' + g.year);
+    if (!dayMap[key]) dayMap[key] = [];
+    dayMap[key].push(g);
+  });
+  var days = Object.keys(dayMap).sort();
+
+  if (days.length === 0) return;
+
+  // 開催日ごとにcalcRatingsを実行して総合スコア・順位を取得
+  // 累積データ構築：その日までのゲームを使って計算
+  var scoreHistory = {}; // {name: [score,...]}
+  var rankHistory  = {}; // {name: [rank,...]}
+  var labels = [];
+
+  // その日までの累積ゲームでRAWを再構築
+  var cumulativeGames = [];
+  days.forEach(function(day) {
+    cumulativeGames = cumulativeGames.concat(dayMap[day]);
+    labels.push(day.replace(/^no-date-/, ''));
+
+    // 累積ゲームからRAWを再構築
+    var tempRaw = {};
+    cumulativeGames.forEach(function(g) {
+      var ySec = sec === 'TOTAL' ? 'TOTAL' : String(g.year);
+      g.players.forEach(function(p) {
+        var n = p.name;
+        if (!tempRaw[n]) tempRaw[n] = {};
+        if (!tempRaw[n][ySec]) tempRaw[n][ySec] = {
+          '参加日数':0,'半荘':0,'Total Score':0,'Ave.Score':0,
+          'TOP':0,'2着':0,'3着':0,'4着':0,'TOP率':0,'連対率':0,'4着回避率':0,
+          'Rank Rating':0,'役満':0,'ヤキトリ':0
+        };
+        var s = tempRaw[n][ySec];
+        s['半荘']++;
+        s['Total Score'] += p.score;
+        if (p.rank===1) s['TOP']++;
+        else if (p.rank===2) s['2着']++;
+        else if (p.rank===3) s['3着']++;
+        else if (p.rank===4) s['4着']++;
+        s['Ave.Score']    = s['Total Score'] / s['半荘'];
+        s['TOP率']        = s['TOP']  / s['半荘'];
+        s['連対率']       = (s['TOP'] + s['2着']) / s['半荘'];
+        s['4着回避率']    = 1 - s['4着'] / s['半荘'];
+      });
+    });
+    // TOTAL追加
+    if (sec !== 'TOTAL') {
+      Object.keys(tempRaw).forEach(function(n) {
+        tempRaw[n]['TOTAL'] = tempRaw[n][sec] || {};
+      });
+    }
+
+    // calcRatings実行
+    var result = calcRatings(tempRaw, sec === 'TOTAL' ? 'TOTAL' : sec);
+    var allPlayers = (result.ranked || []).concat(
+      TREND_INCLUDE_UNRANKED ? (result.unranked || []) : []
+    );
+    var byFinal = allPlayers.slice().sort(function(a,b){return b.final-a.final;});
+
+    allPlayers.forEach(function(d) {
+      if (!scoreHistory[d.name]) scoreHistory[d.name] = [];
+      if (!rankHistory[d.name])  rankHistory[d.name]  = [];
+      var rankPos = byFinal.findIndex(function(x){return x.name===d.name;}) + 1;
+      scoreHistory[d.name].push(Math.round(d.final * 10) / 10);
+      rankHistory[d.name].push(rankPos);
+    });
+  });
+
+  // 全プレイヤー名（最終スコアの高い順）
+  var names = Object.keys(scoreHistory).sort(function(a, b) {
+    var sa = scoreHistory[a]; var sb = scoreHistory[b];
+    var va = sa.length ? sa[sa.length-1] : 0;
+    var vb = sb.length ? sb[sb.length-1] : 0;
+    return vb - va;
+  });
+
+  // COLORSをプレイヤー数分に拡張
+  var palette = [
+    '#f5c842','#42e8a0','#ff7043','#a042e8','#4290e8','#00bcd4',
+    '#e84260','#8bc34a','#ff9800','#9c27b0','#03a9f4','#f06292',
+    '#aed581','#4dd0e1','#ffb74d','#ce93d8','#80cbc4','#ef9a9a',
+    '#fff176','#b0bec5'
+  ];
+
+  // チャート描画
+  function makeDatasets(history) {
+    return names.map(function(name, i) {
+      var data = history[name] || [];
+      // 初参加日より前はnull、初参加日以降はデータを詰める
+      var startIdx = labels.length - data.length; // 先頭のnull数
+      var padded = new Array(labels.length).fill(null);
+      data.forEach(function(v, idx) { padded[startIdx + idx] = v; });
+      return {
+        label: name,
+        data: padded,
+        borderColor: palette[i % palette.length],
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: data.length > 20 ? 2 : 4,
+        pointHoverRadius: 6,
+        tension: 0.3,
+        spanGaps: false, // 途切れはつなげない
+      };
+    });
+  }
+
+  var commonOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#e2e2f0', font: { family: 'Noto Sans JP', size: 10 }, boxWidth: 12, padding: 8 }
+      },
+      tooltip: { backgroundColor: '#1a1a2e', titleColor: '#f5c842', bodyColor: '#e2e2f0' }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#aaaacc', font: { size: 10 }, maxRotation: 45 },
+        grid:  { color: '#1a1a26' }
+      },
+      y: {
+        ticks: { color: '#aaaacc', font: { size: 10 } },
+        grid:  { color: '#2a2a40' }
+      }
+    }
+  };
+
+  // スコアチャート
+  if (trendScoreChartInst) { trendScoreChartInst.destroy(); trendScoreChartInst = null; }
+  var scoreCtx = document.getElementById('trendScoreChart');
+  if (scoreCtx) {
+    trendScoreChartInst = new Chart(scoreCtx, {
+      type: 'line',
+      data: { labels: labels, datasets: makeDatasets(scoreHistory) },
+      options: Object.assign({}, commonOptions, {
+        scales: Object.assign({}, commonOptions.scales, {
+          y: Object.assign({}, commonOptions.scales.y, {
+            title: { display: true, text: '総合スコア', color: '#aaaacc' }
+          })
+        })
+      })
+    });
+  }
+
+  // 順位チャート
+  if (trendRankChartInst) { trendRankChartInst.destroy(); trendRankChartInst = null; }
+  var rankCtx = document.getElementById('trendRankChart');
+  if (rankCtx) {
+    trendRankChartInst = new Chart(rankCtx, {
+      type: 'line',
+      data: { labels: labels, datasets: makeDatasets(rankHistory) },
+      options: Object.assign({}, commonOptions, {
+        scales: Object.assign({}, commonOptions.scales, {
+          y: Object.assign({}, commonOptions.scales.y, {
+            reverse: true,
+            min: 1,
+            ticks: Object.assign({}, commonOptions.scales.y.ticks, { stepSize: 1 }),
+            title: { display: true, text: '順位', color: '#aaaacc' }
+          })
+        })
+      })
+    });
+  }
 }
 
 
